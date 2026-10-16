@@ -97,6 +97,9 @@ export default async function Journey({ searchParams }: { searchParams: Promise<
         <Card title="Cars renters requested">
           <BarList rows={behavior.renterCars.map(([label, value]) => ({ label, value }))} empty="No requests yet." />
         </Card>
+        <Card title="Airports chosen for the walkthrough" className="lg:col-span-2" right={<span className="text-[12.5px] text-ink3">Prefilled from the survey; participants can change them</span>}>
+          <BarList rows={behavior.tripAirports.map(([label, value]) => ({ label: label.replace(/other:/g, ''), value }))} empty="No walkthroughs started yet." />
+        </Card>
         <Card title="Cars owners added">
           <BarList rows={behavior.ownerCars.map(([label, value]) => ({ label, value }))} empty="No vehicles yet." />
         </Card>

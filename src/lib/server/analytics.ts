@@ -274,9 +274,16 @@ export async function journeyMetrics(order: 'all' | 'first' | 'second' = 'all') 
     const k = [v?.make, v?.model].filter(Boolean).join(' ') || 'unknown';
     ownerCars.set(k, (ownerCars.get(k) || 0) + 1);
   }
+  const tripAirports = new Map<string, number>();
+  for (const r of beh.filter((x) => x.question_id.endsWith('.trip_airports'))) {
+    const v = (r.value || {}) as Record<string, string | null>;
+    const k = r.journey === 'owner' ? `Owner · ${v.from || '?'}${v.to ? ` → ${v.to}` : ''}` : `Renter · into ${v.arrive || '?'}`;
+    tripAirports.set(k, (tripAirports.get(k) || 0) + 1);
+  }
   return {
     journeys: result,
     behavior: {
+      tripAirports: [...tripAirports].sort((a, b) => b[1] - a[1]).slice(0, 15),
       ownersBooked: confirmedOwner.length,
       ownersRentOn: rentOn.length,
       medianPrice: median(prices),

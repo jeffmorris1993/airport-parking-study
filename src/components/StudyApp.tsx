@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { STUDY } from '@config/study';
-import { CHECKPOINTS, type Question } from '@config/questions';
+import { STUDY, airportDisplay, type TripAirport } from '@config/study';
+import { AIRPORTS, CHECKPOINTS, airportFromAnswer, type Question } from '@config/questions';
 import { JOURNEYS, type Persona } from '@config/journeys';
 import type { ParticipantVehicle } from '@config/screen-data';
 import { buildPlan, chooseJourneyOrder, personaLabel, qualify, type Answers, type PlanStep } from '@/lib/flow/plan';
@@ -26,6 +26,8 @@ type FlowState = {
   carry: string;
   cpDone: string[];
   startedAt: string;
+  /** Airports the participant chose for each walkthrough (survey answer format: code or "other:Name"). */
+  trip?: { from?: string; to?: string; arrive?: string };
 };
 
 const KEY = 'ms_flow_v1';
@@ -267,15 +269,27 @@ export function StudyApp() {
 
     case 'journey_intro': {
       const j = JOURNEYS[current.persona];
+      const persona = current.persona;
+      const dest = Array.isArray(state.answers.q3_dest_airports) ? (state.answers.q3_dest_airports as string[])[0] : undefined;
+      const home = typeof state.answers.q2_home_airport === 'string' ? state.answers.q2_home_airport : undefined;
+      const defaults = {
+        from: state.trip?.from ?? home ?? STUDY.airport.code,
+        to: state.trip?.to ?? dest ?? '',
+        arrive: state.trip?.arrive ?? dest ?? home ?? STUDY.airport.code,
+      };
       return (
         <JourneyIntro
           key={current.id}
+          persona={persona}
           heading={j.intro.heading}
           body={j.intro.body}
+          defaults={defaults}
           label={current.of > 1 ? `Walkthrough ${current.number} of ${current.of} · ${j.title}` : j.title}
-          onStart={() => {
-            tracker.exitStep('advanced');
-            go(1, { status: 'in_journey' });
+          onStart={(trip) => {
+            const picked = persona === 'owner' ? { from: trip.from, to: trip.to || null } : { arrive: trip.arrive };
+            respond({ phase: 'behavior', question_id: `${persona}.trip_airports`, journey: persona, step_id: current.id, value: picked, ms_to_answer: null, change_count: 0 });
+            tracker.exitStep('advanced', { airports: picked });
+            go(1, { status: 'in_journey' }, (s) => ({ ...s, trip: { ...s.trip, ...trip } }));
           }}
         />
       );
@@ -293,6 +307,7 @@ export function StudyApp() {
           persona={persona}
           earlier={earlier}
           carry={state.carry}
+          airport={airportFromAnswer(persona === 'owner' ? state.trip?.from : state.trip?.arrive) ?? airportFromAnswer(STUDY.airport.code)}
           vehicle={state.vehicle ? { ...state.vehicle, plate: plateRef.current } : null}
           progress={{ n, of: inJourney.length }}
           cpDone={(id) => state.cpDone.includes(cpKey(id, persona))}
@@ -471,14 +486,71 @@ function QuestionScreen({
   );
 }
 
-function JourneyIntro({ heading, body, label, onStart }: { heading: string; body: string[]; label: string; onStart: () => void }) {
+type Trip = { from: string; to: string; arrive: string };
+
+function airportLabel(v: string) {
+  const a = airportFromAnswer(v);
+  return a ? airportDisplay(a as TripAirport) : 'your airport';
+}
+
+/** Native select: easy on phones, works with screen readers, and keeps any custom airport typed in the survey. */
+function AirportSelect({ label, value, onChange, optional, id }: { label: string; value: string; onChange: (v: string) => void; optional?: boolean; id: string }) {
+  const sorted = [...AIRPORTS].sort((a, b) => a.city.localeCompare(b.city) || a.name.localeCompare(b.name));
   return (
-    <Page footer={<button className="btn-primary w-full" onClick={onStart} data-track="journey-start">Start the walkthrough</button>}>
+    <label className="grid gap-1.5 text-[15px] font-semibold" htmlFor={id}>
+      {label}
+      <select id={id} className="field font-normal" value={value} onChange={(e) => onChange(e.target.value)} data-track={`trip-airport:${id}`}>
+        {optional && <option value="">Not sure yet</option>}
+        {value.startsWith('other:') && <option value={value}>{value.slice(6)}</option>}
+        {sorted.map((a) => (
+          <option key={a.code} value={a.code}>
+            {a.city} · {a.name} ({a.code})
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function JourneyIntro({
+  persona,
+  heading,
+  body,
+  label,
+  defaults,
+  onStart,
+}: {
+  persona: Persona;
+  heading: string;
+  body: string[];
+  label: string;
+  defaults: Trip;
+  onStart: (t: Trip) => void;
+}) {
+  const [trip, setTrip] = useState<Trip>(defaults);
+  const fill = (p: string) =>
+    p
+      .replace('{from}', airportLabel(trip.from))
+      .replace('{to}', trip.to ? ` to ${airportLabel(trip.to)}` : '')
+      .replace('{arrive}', airportLabel(trip.arrive));
+  return (
+    <Page footer={<button className="btn-primary w-full" onClick={() => onStart(trip)} data-track="journey-start">Start the walkthrough</button>}>
       <p className="mb-3 text-[12.5px] font-bold uppercase tracking-[1.4px] text-accent">{label}</p>
       <h1 className="serif text-[40px] leading-[1.05]">{heading}</h1>
-      <div className="mt-5 grid gap-4 text-[17px] leading-relaxed text-ink2">
+      <div className="mt-6 grid gap-4 rounded-2xl border border-line bg-surface p-5 shadow-card">
+        <p className="text-[14.5px] text-ink2">We filled these in from your answers. Change them if you like.</p>
+        {persona === 'owner' ? (
+          <>
+            <AirportSelect id="from" label="Flying out of" value={trip.from} onChange={(v) => setTrip((t) => ({ ...t, from: v }))} />
+            <AirportSelect id="to" label="Flying to" optional value={trip.to} onChange={(v) => setTrip((t) => ({ ...t, to: v }))} />
+          </>
+        ) : (
+          <AirportSelect id="arrive" label="Flying into" value={trip.arrive} onChange={(v) => setTrip((t) => ({ ...t, arrive: v }))} />
+        )}
+      </div>
+      <div className="mt-6 grid gap-4 text-[17px] leading-relaxed text-ink2">
         {body.map((p) => (
-          <p key={p}>{p}</p>
+          <p key={p}>{fill(p)}</p>
         ))}
       </div>
       <div className="mt-7 rounded-2xl border border-line bg-surface p-5 text-[15px] leading-relaxed text-ink2 shadow-card">

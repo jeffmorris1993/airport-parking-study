@@ -6,7 +6,7 @@ An unbranded study app for the Nov 1 – Dec 8, 2026 market study (Market Study 
 2. **Screener**: age, travel, vehicle, license, parking habits, rental scenarios. Under-18s stop immediately.
 3. **Brand-blind survey**: the prospectus's Q1–Q9, plus trip length, distance to the airport, and sharing-economy history (marked *Added*).
 4. **Qualification**: sorts people into Owner, Renter, or both using the prospectus persona rules. Dual-qualifiers get both journeys in random order, and the order is recorded.
-5. **Guided prototype**: the real design screens, debranded and set at Chicago Midway, run one task at a time. The 10 checkpoint questions (plus the added H2 earnings questions) pop up over the paused screen at the moments the prospectus specifies.
+5. **Guided prototype**: the real design screens, debranded, and set at the airport each participant picks (prefilled from their survey answers), run one task at a time. The 10 checkpoint questions (plus the added H2 earnings questions) pop up over the paused screen at the moments the prospectus specifies.
 6. **Wrap-up**: interview opt-in (stored separately) and a personal referral link for recruiting.
 
 Everything is tracked from consent onward:
@@ -61,7 +61,7 @@ STUDY_LOCAL_STORE=1 npm run dev      # data goes to ./.data, /admin opens withou
 
 | To change… | Edit |
 |---|---|
-| App name, price, airport, lot details, **claims** (insurance, monitoring, shuttle, renter vetting) | `config/study.ts` |
+| App name, price, fallback airport, **claims** (insurance, monitoring, shuttle, renter vetting) | `config/study.ts` |
 | Screener, survey, and checkpoint wording | `config/questions.ts` |
 | Journey order, task text, which checkpoint fires where | `config/journeys.ts` |
 | The prototype screens themselves | `scripts/clean-screens.mjs`, then `npm run screens` |

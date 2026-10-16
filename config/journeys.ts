@@ -35,6 +35,7 @@ export type ScreenStep = {
 export type Journey = {
   persona: Persona;
   title: string;
+  /** {from}, {to} and {arrive} are replaced with the participant's chosen airports. */
   intro: { heading: string; body: string[] };
   steps: ScreenStep[];
 };
@@ -85,7 +86,7 @@ export const JOURNEYS: Record<Persona, Journey> = {
     intro: {
       heading: 'You’re flying out next month',
       body: [
-        'Imagine you’re flying out of Chicago Midway for about a week and plan to drive to the airport.',
+        'Imagine you’re flying out of {from}{to} for about a week and plan to drive to the airport.',
         'You’ll sign up, add your car, book parking, and decide whether to let a verified traveler rent your car while you’re away.',
         'Use the app the way you normally would. A few short questions will pop up along the way.',
       ],
@@ -133,7 +134,7 @@ export const JOURNEYS: Record<Persona, Journey> = {
     intro: {
       heading: 'You need a car for a trip',
       body: [
-        'Imagine you’re flying into Chicago Midway and need a car for a few days.',
+        'Imagine you’re flying into {arrive} and need a car for a few days.',
         'You’ll sign up, find a car from a local owner, review the rules and protection, and request to book.',
         'Use the app the way you normally would. A few short questions will pop up along the way.',
       ],

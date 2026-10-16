@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CHECKPOINTS } from '@config/questions';
 import type { Persona, ScreenStep as StepCfg } from '@config/journeys';
 import { BROWSE_CARS, planCars, type ParticipantVehicle } from '@config/screen-data';
+import type { TripAirport } from '@config/study';
 import { tracker } from '@/lib/client/tracker';
 import { buildSrcdoc, loadScreen, navSignal } from '@/lib/client/screens';
 import { CheckpointSheet, type CheckpointAnswer } from './CheckpointSheet';
@@ -20,6 +21,8 @@ export type ScreenStepProps = {
   /** Earlier steps in the same journey: navigating to one of their screens goes back. */
   earlier: { planIndex: number; screen: string }[];
   carry: string;
+  /** The airport this journey happens at (owner: departure, renter: arrival). */
+  airport: TripAirport | null;
   vehicle: ParticipantVehicle | null;
   cpDone: (cpId: string) => boolean;
   onCheckpoint: (cpId: string, a: CheckpointAnswer) => void;
@@ -202,7 +205,7 @@ export function ScreenStep(props: ScreenStepProps) {
     setTaskOpen(true);
     tracker.enterStep({ journey: persona, step_id: step.id, screen_id: step.screen }, { title: step.title, query: query || null });
     loadScreen(step.screen)
-      .then((html) => alive && setSrcdoc(buildSrcdoc(html, query)))
+      .then((html) => alive && setSrcdoc(buildSrcdoc(html, query, propsRef.current.airport)))
       .catch(() => alive && setError(true));
     return () => {
       alive = false;

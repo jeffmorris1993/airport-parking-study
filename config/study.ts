@@ -13,13 +13,17 @@ export const STUDY = {
   targetQualified: 50,
   contactEmail: 'study@example.com',
 
+  /**
+   * Fallback airport only. Each participant picks their own airport at the start
+   * of a walkthrough (prefilled from their survey answers), and the screens use it.
+   */
   airport: {
     code: 'MDW',
     name: 'Chicago Midway',
     city: 'Chicago',
     lotName: 'Midway lot',
     lotAddress: 'Near Chicago Midway Airport. Exact address shared after you book.',
-    lotPhone: '(773) 555-0142',
+    lotPhone: '(555) 010-0142',
   },
 
   pricing: {
@@ -57,8 +61,30 @@ export const STUDY = {
 
 export type StudyConfig = typeof STUDY;
 
+export type TripAirport = { code: string; name: string; city: string };
+
+/** How an airport reads on the screens: "Chicago Midway", "Denver (DEN)", "Atlanta Hartsfield-Jackson". */
+export function airportDisplay(a: TripAirport) {
+  const name = a.name.replace(/ Intl$/, ' International');
+  if (!a.city || name.toLowerCase().includes(a.city.toLowerCase())) return name;
+  if (a.name === a.code) return `${a.city} (${a.code})`;
+  return `${a.city} ${name}`;
+}
+
+/** Tokens for the participant's chosen airport: lot name, address, code. */
+export function airportTokens(a: TripAirport): Record<string, string> {
+  const short = a.name === a.code ? a.code : a.name.replace(/ Intl$/, '').replace(/^.*·\s*/, '');
+  const display = airportDisplay(a);
+  return {
+    AIRPORT_CODE: a.code || display,
+    AIRPORT_NAME: display,
+    LOT_NAME: `${short} lot`,
+    LOT_ADDRESS: `Near ${/\)$|airport$/i.test(display) ? display : `${display} Airport`}. Exact address shared after you book.`,
+  };
+}
+
 /** Token map used to fill {{TOKEN}} placeholders in screen HTML. */
-export function screenTokens(): Record<string, string> {
+export function screenTokens(airport?: TripAirport | null): Record<string, string> {
   const a = STUDY.airport;
   const p = STUDY.pricing;
   const c = STUDY.claims;
@@ -81,6 +107,7 @@ export function screenTokens(): Record<string, string> {
     CLAIM_SHUTTLE_SHORT: c.shuttleShort,
     CLAIM_RENTER_VETTING: c.renterVetting,
     CONTACT_EMAIL: STUDY.contactEmail,
+    ...(airport ? airportTokens(airport) : {}),
   };
 }
 

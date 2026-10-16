@@ -13,7 +13,12 @@ test('owner-only participant: survey, owner walkthrough, full tracking', async (
   await consent(page);
   expect(await answerSurvey(page, 'owner')).toBe(18);
   await expect(page.getByText('Car owner')).toBeVisible();
+  // Airports are prefilled from the survey and can be changed; the screens follow the choice.
+  await expect(page.getByLabel('Flying out of')).toHaveValue('MDW');
+  await page.getByLabel('Flying out of').selectOption('DEN');
+  await expect(page.getByText(/flying out of Denver International to Chicago Midway/)).toBeVisible();
   await page.getByRole('button', { name: 'Start the walkthrough' }).click();
+  await expect(page.frameLocator('iframe').getByText(/near Denver International/)).toBeVisible();
   await ownerJourney(page, true);
   await finish(page);
   const code = await participantCode(page);
@@ -25,6 +30,7 @@ test('owner-only participant: survey, owner walkthrough, full tracking', async (
   for (const q of ['s_age', 'q8_wtp', 'q9_concern', 'q_trip_length', 'cp1', 'cp2', 'cp3', 'cp4', 'cp5@owner', 'cp6@owner', 'h2_expect@owner', 'cp8@owner', 'cp9@owner', 'cp10@owner']) {
     expect(ids, q).toContain(q);
   }
+  expect(rs.find((r) => r.question_id === 'owner.trip_airports')!.value).toEqual({ from: 'DEN', to: 'MDW' });
   const trip = rs.find((r) => r.question_id === 'owner.trip:confirmed')!.value as { rent: boolean; price: number };
   expect(trip.rent).toBe(true);
   expect(trip.price).toBe(52);

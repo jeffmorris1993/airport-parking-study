@@ -393,3 +393,14 @@ export const AIRPORTS: { code: string; city: string; name: string }[] = [
   ['SDF', 'Louisville', 'Muhammad Ali'], ['DSM', 'Des Moines', 'Des Moines Intl'], ['GRR', 'Grand Rapids', 'Gerald R. Ford'],
   ['MSN', 'Madison', 'Dane County'], ['RFD', 'Rockford', 'Chicago Rockford'],
 ].map(([code, city, name]) => ({ code, city, name }));
+
+/** Turn a survey airport answer ("MDW" or "other:Some airport") into display info. */
+export function airportFromAnswer(v: unknown): { code: string; name: string; city: string } | null {
+  if (typeof v !== 'string' || !v) return null;
+  if (v.startsWith('other:')) {
+    const name = v.slice(6).trim();
+    return name ? { code: '', name, city: '' } : null;
+  }
+  const a = AIRPORTS.find((x) => x.code === v);
+  return a ? { ...a } : null;
+}

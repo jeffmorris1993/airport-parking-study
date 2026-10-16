@@ -105,6 +105,8 @@ export async function ownerJourney(page: Page, first: boolean) {
   }
   await f.locator('#nextBtn').click();
   await expect(f.getByText('2019 Honda Accord')).toBeVisible();
+  const lot = await f.locator('.where b, .where strong').first().textContent().catch(() => null);
+  if (lot) expect(lot).toMatch(/ lot$/);
   await f.locator('#rentSw').check();
   await f.locator('#price').fill('52');
   await f.locator('#go').click();

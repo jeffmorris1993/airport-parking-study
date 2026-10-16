@@ -1,6 +1,6 @@
 'use client';
 
-import { fillTokens } from '@config/study';
+import { fillTokens, screenTokens, type TripAirport } from '@config/study';
 
 const cache = new Map<string, Promise<string>>();
 
@@ -61,14 +61,14 @@ window.addEventListener('submit',function(e){var f=e.target;if(e.defaultPrevente
 
 const FONTS = '<link rel="stylesheet" href="/fonts/fonts.css">';
 
-export function buildSrcdoc(html: string, query = '') {
+export function buildSrcdoc(html: string, query = '', airport?: TripAirport | null) {
   const qs = query ? (query.startsWith('?') ? query : `?${query}`) : '';
   const inject =
     `<script>window.__qs=${JSON.stringify(qs)};</script>` +
     `<script>${BRIDGE}</script>` +
     FONTS +
     `<style>${STUDY_CSS}</style>`;
-  return fillTokens(html).replace(/<head>/i, `<head>${inject}`);
+  return fillTokens(html, screenTokens(airport)).replace(/<head>/i, `<head>${inject}`);
 }
 
 /** Parse a screen's link target into a signal, e.g. "nav:onboarding?id=progress". */
