@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{APP_NAME}} · Sign in</title>
+<style>
+:root{--ink:#0a1a36;--navy:#14524a;--gold:#1d6b5f;--gold-soft:#d9eee9;--paper:#fff;--surface:#f1f4fa;--text:#0a1a36;--muted:#4e5b76;--line:#dae0ec;--success:#0e8a4a;--warning:#b97914;--danger:#B3261E;--hero:linear-gradient(155deg,#14524a 0%,#1d6b5f 55%,#2f8a7a 100%);--serif:"Instrument Serif",Georgia,serif;--sans:"Inter",-apple-system,system-ui,sans-serif;--shadow:0 1px 2px rgba(11,18,32,.05),0 8px 24px rgba(11,18,32,.06);--ring:0 0 0 3px #a8d8cd}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--surface);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
+a{color:var(--navy);font-weight:600;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line)}
+a:hover{color:var(--ink);text-decoration-color:var(--gold)}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:none;box-shadow:var(--ring)}
+.tnum{font-variant-numeric:tabular-nums}
+.shell{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);min-height:100vh;align-items:start}
+.hero{position:sticky;top:0;height:100vh;min-height:560px;background:var(--hero);color:#fff;padding:40px 56px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-160px;bottom:-160px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.16),transparent 68%);pointer-events:none}
+.hero img{height:34px;width:auto;align-self:flex-start;object-fit:contain;filter:brightness(0) invert(1);display:block}
+.hero h1{font-family:var(--serif);font-weight:400;font-size:clamp(40px,4.4vw,60px);line-height:1.02;letter-spacing:-1px;max-width:460px;text-wrap:balance}
+.hero h1 em{color:#bcd4ff}
+.hero p{color:rgba(255,255,255,.9);font-size:16px;max-width:400px;margin-top:16px}
+.hero .back{color:rgba(255,255,255,.78);font-size:14px;font-weight:500;text-decoration:none}
+.hero .back:hover{color:#fff}
+.main{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;min-height:100vh}
+.mob-top{display:none}
+.card{width:100%;max-width:440px;background:var(--paper);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:32px}
+.card h2{font-family:var(--serif);font-weight:400;font-size:30px;line-height:1.1;letter-spacing:-.4px;color:var(--ink)}
+.card .sub{color:var(--muted);font-size:14px;margin-top:6px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border-radius:8px;padding:4px;margin-bottom:24px}
+.tabs button{border:0;background:transparent;font:600 14px var(--sans);color:var(--muted);padding:10px;border-radius:6px;cursor:pointer;min-height:40px}
+.tabs button[aria-selected="true"]{background:var(--paper);color:var(--ink);box-shadow:0 1px 2px rgba(11,18,32,.08)}
+form{margin-top:24px;display:flex;flex-direction:column;gap:16px}
+.field label{display:block;font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px}
+.inwrap{position:relative}
+.field input{width:100%;font:400 16px var(--sans);color:var(--text);background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:12px 14px;min-height:48px;transition:border-color .15s}
+.field input:hover{border-color:#C3CAD6}
+.field input:focus-visible{border-color:var(--gold)}
+.field input:disabled{background:var(--surface);color:var(--muted)}
+.field .help{font-size:12px;color:var(--muted);margin-top:6px}
+.field .err{display:none;align-items:flex-start;gap:6px;font-size:14px;color:var(--danger);margin-top:6px}
+.field.invalid input{border-color:var(--danger)}
+.field.invalid .err{display:flex}
+.field.invalid .help{display:none}
+.err svg,.banner svg{flex:none;margin-top:2px}
+.reveal{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:transparent;font:600 13px var(--sans);color:var(--navy);padding:8px 10px;border-radius:6px;cursor:pointer}
+.row{display:flex;justify-content:space-between;align-items:center;font-size:14px}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:50px;border-radius:12px;font:600 16px var(--sans);cursor:pointer;border:1px solid transparent;transition:background .15s}
+.btn-gold{background:var(--gold);color:#fff;box-shadow:0 8px 20px rgba(29,107,95,.28)}
+.btn-gold:hover{background:var(--navy)}
+.btn-gold:disabled{background:#9fbaf0;color:#fff;box-shadow:none;cursor:not-allowed}
+.btn-quiet{background:var(--paper);color:var(--ink);border-color:var(--line)}
+.btn-quiet:hover{border-color:var(--navy)}
+.btn-quiet:disabled{color:var(--muted);cursor:not-allowed}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fine{font-size:12px;color:var(--muted);text-align:center}
+.alt{font-size:14px;color:var(--muted);text-align:center;margin-top:20px}
+.alt button{border:0;background:none;font:600 14px var(--sans);color:var(--navy);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line);cursor:pointer;padding:4px}
+.banner{display:flex;gap:10px;padding:12px 14px;border-radius:8px;font-size:14px;margin-top:20px}
+.banner.warn{background:#fdecd0;color:#7a4f0a}
+.banner.danger{background:#FBEAE9;color:var(--danger)}
+.banner strong{display:block;color:var(--ink);font-weight:600}
+.verify{text-align:center}
+.verify .ic{width:56px;height:56px;border-radius:50%;background:var(--gold-soft);color:var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+.verify .sub{margin:8px auto 24px;max-width:320px;font-size:15px}
+.verify .sub b{color:var(--text)}
+.verify .stack{display:flex;flex-direction:column;gap:12px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;margin-bottom:16px}
+.badge.warn{background:#fdecd0;color:#7a4f0a}
+.badge.ok{background:#dcf2e6;color:var(--success)}
+[hidden]{display:none!important}
+.review{position:fixed;left:16px;bottom:16px;z-index:10;background:var(--ink);color:#fff;border-radius:12px;padding:12px;box-shadow:0 12px 32px rgba(11,18,32,.3);font-size:12px;display:flex;flex-direction:column;gap:8px;max-width:calc(100vw - 32px)}
+.review .lbl{color:rgba(255,255,255,.6);font-weight:600;letter-spacing:.6px;text-transform:uppercase;font-size:11px}
+.review .chips{display:flex;flex-wrap:wrap;gap:6px}
+.review button{border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;font:500 12px var(--sans);padding:6px 10px;border-radius:999px;cursor:pointer}
+.review button.on{background:var(--gold);color:#fff;border-color:var(--gold)}
+.review .x{position:absolute;right:8px;top:6px;border:0;padding:2px 6px;opacity:.6}
+@media(max-width:1023px){.shell{grid-template-columns:1fr}.hero{display:none}.mob-top{display:flex;width:100%;max-width:440px;justify-content:space-between;align-items:center;margin-bottom:24px}.mob-top img{height:26px}.mob-top a{font-size:14px;font-weight:500;color:var(--muted);text-decoration:none}.main{justify-content:flex-start;padding:24px 16px 160px}}
+@media(max-width:640px){.card{padding:8px 4px;border:0;box-shadow:none;background:transparent}.main{background:var(--paper);padding:16px 16px 150px}.mob-top{margin-bottom:16px}.card h2{font-size:28px}.review{left:8px;right:8px;bottom:8px;max-width:none;padding:10px}.review .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.review .chips button{flex:none;min-height:36px}}
+@media(max-width:360px){.tabs button{font-size:13px;padding:8px}.main{padding-left:12px;padding-right:12px}}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="hero" data-screen-label="M1 hero panel">
+<span class="wm">{{APP_NAME}}</span>
+<div>
+<h1>Park secure.<br><em>Earn while away.</em></h1>
+<p>One account for secure airport parking and renting your car to verified travelers.</p>
+</div>
+<a class="back" href="{{APP_NAME}} Pilot Landing.html">← Back</a>
+</aside>
+<main class="main" data-screen-label="M1 Sign up / Sign in">
+<div class="mob-top"><span class="wm">{{APP_NAME}}</span><a href="{{APP_NAME}} Pilot Landing.html">← Home</a></div>
+<div class="card">
+<div id="authView">
+<div class="tabs" role="tablist">
+<button role="tab" id="tabUp" aria-selected="true">Create account</button>
+<button role="tab" id="tabIn" aria-selected="false">Sign in</button>
+</div>
+<h2 id="title">Create your account</h2>
+<p class="sub" id="sub">Takes under a minute. No payment needed.</p>
+<div class="banner danger" id="summary" role="alert" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.01"></path></svg><div><strong>Two things need a fix</strong>Check the highlighted fields below.</div></div>
+<div class="banner warn" id="rate" role="status" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 018 0v3"></path></svg><div><strong>Too many attempts</strong>To keep your account safe, sign-in is paused. Try again in <span class="tnum" id="rateT">4:59</span>, or <a href="#" id="resetLink">reset your password</a>.</div></div>
+<form id="form" novalidate>
+<div class="field" id="fEmail"><label for="email">Email</label><input id="email" type="email" autocomplete="email" placeholder="you@example.com"><div class="err"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.01"></path></svg><span>Enter an email like name@example.com.</span></div></div>
+<div class="field" id="fPhone"><label for="phone">Mobile phone</label><input id="phone" type="tel" autocomplete="tel" placeholder="(555) 123-4567"><p class="help">We text you when your car is parked and returned.</p><div class="err"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.01"></path></svg><span>Enter a 10-digit US mobile number.</span></div></div>
+<div class="field" id="fPass"><div class="row" style="margin-bottom:6px"><label for="pass" style="margin:0">Password</label><a href="#" id="forgot" hidden>Forgot password?</a></div><div class="inwrap"><input id="pass" type="password" autocomplete="new-password" style="padding-right:64px"><button type="button" class="reveal" id="reveal" aria-label="Show password">Show</button></div><p class="help">At least 8 characters.</p><div class="err"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.01"></path></svg><span id="passErr">Use at least 8 characters.</span></div></div>
+<button type="submit" class="btn btn-gold" id="submit">Create account</button>
+<p class="fine" id="terms">By creating an account you agree to the <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.</p>
+</form>
+<p class="alt" id="altLink"><span id="altQ">Prefer no password?</span> <button type="button" id="modeBtn">Email me a sign-in link</button></p>
+</div>
+<div id="verifyView" class="verify" hidden>
+<div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3.5 6.5l8.5 6.5 8.5-6.5"></path></svg></div>
+<span class="badge warn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg><span id="vBadge">Email not confirmed</span></span>
+<h2 id="vTitle">Check your inbox</h2>
+<p class="sub" id="vSub">We sent a link to <b id="vEmail">alex@example.com</b>. Open it to confirm your email and finish setting up.</p>
+<div class="stack">
+<button class="btn btn-quiet" id="resend" disabled>Resend in <span class="tnum" id="resendT">0:42</span></button>
+<a class="btn btn-gold" href="onboarding.html" id="confirmed" style="text-decoration:none">I’ve confirmed my email →</a>
+<p class="alt" style="margin:0"><button type="button" id="changeEmail">Use a different email</button></p>
+</div>
+<div class="banner warn" id="resent" role="status" hidden style="background:#dcf2e6;color:var(--success);text-align:left"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-11"></path></svg><div>New link sent. It can take a minute to arrive, so check spam too.</div></div>
+</div>
+</div>
+</main>
+</div>
+<div class="review" id="review">
+<button class="x" id="rClose" aria-label="Hide review panel">×</button>
+<span class="lbl">Review state</span>
+<div class="chips" id="rStates"><button data-s="default" class="on">Default</button><button data-s="errors">Field errors</button><button data-s="submitting">Submitting</button><button data-s="unverified">Unverified email</button><button data-s="rate">Rate-limited</button></div>
+<span class="lbl">Mode</span>
+<div class="chips" id="rModes"><button data-m="up" class="on">Sign up</button><button data-m="in">Sign in</button><button data-m="link">Email link</button></div>
+</div>
+<script>
+(function(){
+var $=function(id){return document.getElementById(id)};
+var mode='up',state='default',rateTimer,resendTimer;
+var fields={email:$('fEmail'),phone:$('fPhone'),pass:$('fPass')};
+function fmt(s){return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
+function countdown(el,secs,done){var t=secs;el.textContent=fmt(t);return setInterval(function(){t--;if(t<=0){done();return}el.textContent=fmt(t)},1000)}
+function setMode(m){
+  mode=m;
+  $('tabUp').setAttribute('aria-selected',m==='up');$('tabIn').setAttribute('aria-selected',m!=='up');
+  fields.phone.hidden=m!=='up';fields.pass.hidden=m==='link';$('forgot').hidden=m!=='in';$('terms').hidden=m!=='up';
+  $('pass').autocomplete=m==='in'?'current-password':'new-password';
+  $('fPass').querySelector('.help').hidden=m!=='up';
+  $('title').textContent=m==='up'?'Create your account':m==='in'?'Welcome back':'Sign in with email';
+  $('sub').textContent=m==='up'?'Takes under a minute. No payment needed.':m==='in'?'Sign in to manage your parking and trips.':'We\u2019ll email you a one-time link. No password needed.';
+  $('submit').dataset.label=m==='up'?'Create account':m==='in'?'Sign in':'Email me a link';
+  $('altQ').textContent=m==='link'?'Have a password?':'Prefer no password?';
+  $('modeBtn').textContent=m==='link'?'Sign in with password':'Email me a sign-in link';
+  document.querySelectorAll('#rModes button').forEach(function(b){b.classList.toggle('on',b.dataset.m===m)});
+  setState(state==='unverified'&&m==='link'?'default':state==='unverified'?'unverified':state);
+}
+function clearErr(){Object.values(fields).forEach(function(f){f.classList.remove('invalid');f.querySelector('input').removeAttribute('aria-invalid')});$('summary').hidden=true}
+function setState(s){
+  state=s;clearInterval(rateTimer);clearInterval(resendTimer);clearErr();
+  var sub=$('submit'),inputs=document.querySelectorAll('#form input');
+  inputs.forEach(function(i){i.disabled=false});
+  sub.disabled=false;sub.innerHTML=sub.dataset.label||'Create account';
+  $('rate').hidden=true;$('authView').hidden=false;$('verifyView').hidden=true;$('resent').hidden=true;
+  if(s==='errors'){
+    if(!$('email').value)$('email').value='alex@example';
+    markInvalid('email');
+    if(mode==='up'){if(!$('phone').value)$('phone').value='555 12';markInvalid('phone');$('passErr').textContent='Use at least 8 characters.'}
+    else if(mode==='in'){$('passErr').textContent='That email and password don\u2019t match. Try again or reset your password.';markInvalid('pass')}
+    $('summary').hidden=mode==='link';
+  }
+  if(s==='submitting'){
+    inputs.forEach(function(i){i.disabled=true});sub.disabled=true;
+    sub.innerHTML='<span class="spin" aria-hidden="true"></span>'+(mode==='up'?'Creating your account\u2026':mode==='in'?'Signing you in\u2026':'Sending your link\u2026');
+  }
+  if(s==='rate'){
+    $('rate').hidden=false;sub.disabled=true;
+    rateTimer=countdown($('rateT'),299,function(){clearInterval(rateTimer);setState('default')});
+  }
+  if(s==='unverified'){
+    var em=$('email').value&&/@.+\./.test($('email').value)?$('email').value:'alex@example.com';
+    $('vEmail').textContent=em;$('authView').hidden=true;$('verifyView').hidden=false;
+    var isLink=mode==='link';
+    $('vBadge').textContent=isLink?'Link sent':'Email not confirmed';
+    $('vSub').innerHTML='We sent a link to <b>'+em.replace(/</g,'')+'</b>. '+(isLink?'Open it on this device to sign in. It expires in 15 minutes.':'Open it to confirm your email and finish setting up.');
+    startResend();
+  }
+  document.querySelectorAll('#rStates button').forEach(function(b){b.classList.toggle('on',b.dataset.s===s)});
+}
+function markInvalid(k){var f=fields[k];f.classList.add('invalid');f.querySelector('input').setAttribute('aria-invalid','true')}
+function startResend(){var b=$('resend');b.disabled=true;b.innerHTML='Resend in <span class="tnum" id="resendT">0:42</span>';resendTimer=countdown($('resendT'),42,function(){clearInterval(resendTimer);b.disabled=false;b.textContent='Resend link'})}
+$('resend').onclick=function(){$('resent').hidden=false;startResend()};
+$('changeEmail').onclick=function(){setState('default');$('email').focus()};
+$('tabUp').onclick=function(){setMode('up')};$('tabIn').onclick=function(){setMode('in')};
+$('modeBtn').onclick=function(){setMode(mode==='link'?'in':'link')};
+$('reveal').onclick=function(){var p=$('pass'),show=p.type==='password';p.type=show?'text':'password';this.textContent=show?'Hide':'Show';this.setAttribute('aria-label',show?'Hide password':'Show password')};
+$('form').onsubmit=function(e){
+  e.preventDefault();clearErr();
+  var bad=[];
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test($('email').value))bad.push('email');
+  if(mode==='up'&&$('phone').value.replace(/\D/g,'').length!==10)bad.push('phone');
+  if(mode!=='link'&&$('pass').value.length<8){$('passErr').textContent=mode==='in'?'Enter your password.':'Use at least 8 characters.';bad.push('pass')}
+  if(bad.length){bad.forEach(markInvalid);if(bad.length>1){$('summary').querySelector('strong').textContent=(bad.length===2?'Two':'Three')+' things need a fix';$('summary').hidden=false}$(bad[0]==='pass'?'pass':bad[0]).focus();return}
+  setState('submitting');
+  setTimeout(function(){window.__study.signal('advance',{mode:mode})},1400);
+};
+document.querySelectorAll('#rStates button').forEach(function(b){b.onclick=function(){setState(b.dataset.s)}});
+document.querySelectorAll('#rModes button').forEach(function(b){b.onclick=function(){setMode(b.dataset.m)}});
+$('rClose').onclick=function(){$('review').hidden=true};
+$('resetLink').onclick=$('forgot').onclick=function(e){e.preventDefault()};
+var q=new URLSearchParams(window.__qs);if(q.get('email'))$('email').value=q.get('email');setMode(q.get('mode')==='in'?'in':'up');
+})();
+</script>
+</body>
+</html>

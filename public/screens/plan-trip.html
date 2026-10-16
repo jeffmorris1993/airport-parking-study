@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{APP_NAME}} · Plan a trip</title>
+<style>
+:root{--bg:#f1f4fa;--surface:#fff;--surface2:#f7f9fd;--ink:#0a1a36;--ink2:#4e5b76;--ink3:#8590a8;--line:#dae0ec;--lineSoft:#e8edf5;--accent:#1d6b5f;--accentDark:#14524a;--accentSoft:#d9eee9;--success:#0e8a4a;--successSoft:#dcf2e6;--warn:#8a5a0c;--warnSoft:#fdecd0;--danger:#B3261E;--serif:"Instrument Serif",Georgia,serif;--sans:"Inter",-apple-system,system-ui,sans-serif;--shadow:0 2px 6px rgba(10,26,54,.06),0 12px 28px rgba(10,26,54,.06);--ring:0 0 0 3px #a8d8cd}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none;font-weight:600}
+a:hover{color:var(--accentDark)}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:none;box-shadow:var(--ring);border-radius:8px}
+[hidden]{display:none!important}
+.app{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
+.rail{position:sticky;top:0;height:100vh;background:var(--surface);border-right:1px solid var(--line);padding:24px 16px;display:flex;flex-direction:column;gap:28px}
+.rail .logo{padding:0 8px}
+.logo img{height:30px;width:auto;display:block;object-fit:contain}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:var(--ink2);font-weight:500;font-size:15px;min-height:44px}
+.nav a:hover{background:var(--surface2);color:var(--ink)}
+.nav a[aria-current="page"]{background:var(--accentSoft);color:var(--accentDark);font-weight:600}
+.rail .me{margin-top:auto;display:flex;align-items:center;gap:12px;padding:12px 8px;border-top:1px solid var(--lineSoft)}
+.av{width:36px;height:36px;border-radius:50%;background:var(--accentSoft);color:var(--accentDark);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex:none}
+.me b{display:block;font-size:14px}
+.me a{font-size:13px;font-weight:500;color:var(--ink2)}
+.top{display:none}
+.tabs{display:none}
+main{padding:32px 40px 150px;min-width:0}
+.wrap{max-width:640px;margin:0 auto}
+.review{background:var(--ink);color:#fff;border-radius:14px;padding:10px 14px;margin-bottom:24px;font-size:12px}
+.review summary{cursor:pointer;font-weight:600;letter-spacing:.6px;text-transform:uppercase;font-size:11px;color:rgba(255,255,255,.7);list-style:none;display:flex;justify-content:space-between}
+.review summary::after{content:"Hide";text-transform:none;letter-spacing:0}
+.review:not([open]) summary::after{content:"Show"}
+.review .chips{display:flex;gap:6px;margin-top:10px;overflow-x:auto;scrollbar-width:none}
+.review button{flex:none;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;font:500 12px var(--sans);padding:7px 11px;border-radius:999px;cursor:pointer}
+.review button.on{background:var(--accent);border-color:var(--accent)}
+.back{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:500;color:var(--ink2);min-height:44px;margin-bottom:8px}
+.back:hover{color:var(--ink)}
+.eyebrow{font-size:12.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:10px}
+h1{font-family:var(--serif);font-weight:400;font-size:clamp(34px,4.4vw,44px);line-height:1.05;letter-spacing:-.8px;text-wrap:balance}
+.lead{color:var(--ink2);font-size:16.5px;margin-top:10px;text-wrap:pretty}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:8px 24px;margin-top:28px}
+.pt{display:grid;grid-template-columns:44px minmax(0,1fr);gap:16px;padding:18px 0;align-items:start}
+.pt+.pt{border-top:1px solid var(--lineSoft)}
+.pt .ic{width:44px;height:44px;border-radius:12px;background:var(--accentSoft);color:var(--accent);display:flex;align-items:center;justify-content:center}
+.pt h3{font-size:16.5px;font-weight:600;letter-spacing:-.2px}
+.pt p{font-size:14.5px;color:var(--ink2);margin-top:2px;text-wrap:pretty}
+.privacy{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--ink2);margin-top:20px;padding:0 4px}
+.privacy svg{flex:none;margin-top:2px;color:var(--success)}
+.cta{margin-top:24px;display:flex;flex-direction:column;gap:12px;align-items:stretch}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;font:600 16px var(--sans);cursor:pointer;border:1px solid transparent;min-height:52px;padding:0 24px;transition:background .15s,border-color .15s;text-align:center}
+.btn-accent{background:var(--accent);color:#fff;box-shadow:0 8px 20px rgba(29,107,95,.28)}
+.btn-accent:hover{background:var(--accentDark);color:#fff}
+.btn-ghost{background:var(--surface);color:var(--ink);border-color:var(--line)}
+.btn-ghost:hover{border-color:var(--ink);color:var(--ink)}
+.cta .note{font-size:13px;color:var(--ink3);text-align:center}
+.helpline{margin-top:24px;font-size:14.5px;color:var(--ink2);text-align:center}
+.status{text-align:center;padding:40px 28px 32px}
+.status .ic{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+.ic-progress{background:var(--accentSoft);color:var(--accent);position:relative}
+.ic-progress::before{content:"";position:absolute;inset:-4px;border-radius:50%;border:3px solid transparent;border-top-color:var(--accent);animation:rot 1s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+.ic-success{background:var(--successSoft);color:var(--success)}
+.ic-warn{background:var(--warnSoft);color:var(--warn)}
+.ic-review{background:var(--accentSoft);color:var(--accentDark)}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;margin-bottom:14px}
+.b-progress{background:var(--accentSoft);color:var(--accentDark)}
+.b-progress .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.3}}
+.b-success{background:var(--successSoft);color:var(--success)}
+.b-warn{background:var(--warnSoft);color:var(--warn)}
+.status h2{font-family:var(--serif);font-weight:400;font-size:32px;line-height:1.1;letter-spacing:-.5px;text-wrap:balance}
+.status p{color:var(--ink2);font-size:15.5px;margin:10px auto 0;max-width:400px;text-wrap:pretty}
+.steps{list-style:none;text-align:left;margin:24px auto 0;max-width:340px;display:flex;flex-direction:column;gap:10px;font-size:14.5px}
+.steps li{display:flex;align-items:center;gap:10px;color:var(--ink3)}
+.steps li.done{color:var(--ink)}
+.steps li.done i{background:var(--success);border-color:var(--success);color:#fff}
+.steps li.now{color:var(--ink);font-weight:600}
+.steps li.now i{border-color:var(--accent);border-top-color:transparent;animation:rot 1s linear infinite}
+.steps i{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;flex:none;font-style:normal}
+.reason{display:flex;gap:10px;text-align:left;background:var(--warnSoft);color:#6b4608;border-radius:12px;padding:14px 16px;font-size:14.5px;margin:22px 0 0}
+.reason svg{flex:none;margin-top:2px}
+.reason strong{color:var(--ink);display:block}
+.tips{list-style:none;text-align:left;margin-top:16px;display:flex;flex-direction:column;gap:8px;font-size:14.5px;color:var(--ink2)}
+.tips li{display:flex;gap:10px}
+.tips li svg{flex:none;margin-top:3px;color:var(--success)}
+.status .cta{margin-top:28px}
+@media(max-width:1023px){
+.app{grid-template-columns:1fr}.rail{display:none}
+.top{display:flex;position:sticky;top:0;z-index:30;height:60px;align-items:center;justify-content:space-between;padding:0 16px;background:rgba(241,244,250,.9);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.top .logo img{height:26px}
+main{padding:16px 16px 180px}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface);border-top:1px solid var(--line);padding:4px 4px calc(4px + env(safe-area-inset-bottom))}
+.tabs a{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:500;color:var(--ink3);padding:6px 0;min-height:52px;justify-content:center}
+.tabs a[aria-current="page"]{color:var(--accent);font-weight:600}
+.cta.stick{position:fixed;left:0;right:0;bottom:64px;z-index:20;margin:0;padding:12px 16px;background:rgba(241,244,250,.94);backdrop-filter:blur(14px);border-top:1px solid var(--line);gap:6px}
+.cta.stick .note{font-size:12px}
+}
+@media(max-width:640px){
+.card{padding:4px 18px}
+.pt{grid-template-columns:40px minmax(0,1fr);gap:14px;padding:16px 0}
+.pt .ic{width:40px;height:40px}
+.status{padding:32px 18px 24px}
+.status h2{font-size:28px}
+}
+.blk{margin-top:28px}
+.blk>h2{font-size:16px;font-weight:600;letter-spacing:-.2px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.blk>h2 small{font-size:13px;font-weight:500;color:var(--ink2)}
+.cars{display:flex;flex-direction:column;gap:10px}
+.car{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:14px;align-items:center;background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:12px 16px 12px 12px;cursor:pointer;transition:border-color .15s}
+.car:hover{border-color:#c3cbda}
+.car.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.car input{position:absolute;opacity:0;pointer-events:none}
+.car:has(input:focus-visible){box-shadow:var(--ring)}
+.cth{width:64px;height:48px;border-radius:10px;background:repeating-linear-gradient(135deg,#eef2f8 0 7px,#e3e9f2 7px 14px)}
+.cb{display:flex;flex-direction:column;min-width:0}
+.cb b{font-size:15.5px;font-weight:600}
+.cb span{font-size:13.5px;color:var(--ink2)}
+.cb .pl{font:600 11.5px ui-monospace,Menlo,monospace;letter-spacing:1px;color:var(--ink);margin-top:3px}
+.ccap{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.ccap.y{background:var(--successSoft);color:var(--success)}
+.ccap.n{background:var(--surface2);color:var(--ink2);border:1px solid var(--line)}
+.where{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 16px;font-size:14.5px;color:var(--ink2)}
+.where b{color:var(--ink);display:block;font-size:15px}
+.where svg{color:var(--accent);flex:none}
+.dts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.dg{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
+.dg>b{display:flex;align-items:center;gap:8px;font-size:14.5px;margin-bottom:12px}
+.dg>b i{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.dg.ret>b i{background:var(--ink)}
+.dr2{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:8px}
+.f label{display:block;font-size:12.5px;font-weight:600;color:var(--ink2);margin-bottom:4px}
+.f input{width:100%;font:400 16px var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:10px 12px;min-height:46px;font-variant-numeric:tabular-nums}
+.f{min-width:0}
+.dg input[type=date],.dg input[type=time]{min-width:0;max-width:100%;-webkit-appearance:none;appearance:none;display:block}
+.dg input::-webkit-date-and-time-value{text-align:left;margin:0}
+.f input:focus-visible{outline:none;border-color:var(--accent);box-shadow:var(--ring)}
+.f input:disabled{background:var(--surface2);color:var(--ink3)}
+.er{display:none;gap:6px;align-items:flex-start;font-size:13.5px;color:var(--danger);margin-top:8px}
+.er svg{flex:none;margin-top:2px}
+.f.bad input{border-color:var(--danger)}
+.f.bad .er{display:flex}
+.dg .f .er{margin-top:0}
+.dg .erw{grid-column:1/-1}
+.hint{font-size:13px;color:var(--ink2);margin-top:10px}
+.rent{margin-top:28px;border-radius:22px;overflow:hidden;border:1px solid #c7d8ff;background:var(--surface);box-shadow:0 8px 24px rgba(10,26,54,.08),0 24px 48px rgba(8,40,184,.08)}
+.rh{background:linear-gradient(155deg,#14524a 0%,#1d6b5f 55%,#2f8a7a 100%);color:#fff;padding:22px 24px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 18px;align-items:center;position:relative;overflow:hidden}
+.rh::after{content:"";position:absolute;right:-70px;top:-90px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.2),transparent 68%);pointer-events:none}
+.rh h2{font-family:var(--serif);font-weight:400;font-size:28px;line-height:1.1;letter-spacing:-.4px}
+.rh h2 em{color:#bcd4ff}
+.rh p{font-size:14.5px;color:rgba(255,255,255,.9);grid-column:1}
+.rh .sw{grid-row:1/3;grid-column:2;position:relative;z-index:1}
+.sw{position:relative;width:56px;height:32px;flex:none;appearance:none;-webkit-appearance:none;background:rgba(255,255,255,.3);border-radius:999px;cursor:pointer;transition:background .2s}
+.sw::after{content:"";position:absolute;left:3px;top:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(10,26,54,.3);transition:transform .2s}
+.sw:checked{background:#0e8a4a}
+.sw:checked::after{transform:translateX(24px)}
+.sw:disabled{opacity:.5;cursor:not-allowed}
+.sw:focus-visible{outline:none;box-shadow:0 0 0 3px #fff}
+.rent.blocked{border-color:var(--line);box-shadow:var(--shadow)}
+.rent.blocked .rh{background:linear-gradient(155deg,#5a6886,#7a87a2)}
+.rb{padding:20px 24px 22px}
+.rb.off{font-size:14.5px;color:var(--ink2)}
+.blockm{display:grid;grid-template-columns:40px minmax(0,1fr);gap:14px;align-items:start}
+.blockm .li{width:40px;height:40px;border-radius:12px;background:var(--surface2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink2)}
+.blockm b{display:block;font-size:15.5px}
+.blockm p{font-size:14.5px;color:var(--ink2);margin-top:3px;text-wrap:pretty}
+.blockm a{display:inline-flex;margin-top:10px;font-size:14.5px;min-height:36px;align-items:center}
+.who{list-style:none;display:flex;flex-direction:column;gap:10px;font-size:14.5px;color:var(--ink2)}
+.who li{display:grid;grid-template-columns:20px 1fr;gap:10px}
+.who svg{color:var(--success);margin-top:3px}
+.who b{color:var(--ink);font-weight:600}
+.prow{display:grid;grid-template-columns:minmax(0,200px) 1fr;gap:16px;align-items:end}
+.pin{position:relative}
+.pin span{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--ink2);font-size:16px;pointer-events:none}
+.pin input{padding-left:26px;padding-right:48px}
+.pin em{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-style:normal;font-size:13px;color:var(--ink3);pointer-events:none}
+.sugg{font-size:13.5px;color:var(--ink2);padding-bottom:12px}
+.sugg button{background:none;border:0;color:var(--accent);font:600 13.5px var(--sans);cursor:pointer;padding:4px}
+.win{font-size:13.5px;color:var(--ink2);margin-top:14px;display:flex;gap:8px;align-items:center}
+.win b{color:var(--ink);font-variant-numeric:tabular-nums}
+.est{background:var(--surface2);border:1px solid var(--lineSoft);border-radius:16px;padding:16px 18px;margin-top:18px}
+.net{display:flex;flex-direction:column;gap:2px}
+.net span{font-size:13px;color:var(--ink2)}
+.net b{font-size:30px;font-weight:600;letter-spacing:-.6px;font-variant-numeric:tabular-nums;line-height:1.15}
+.net b.pos{color:var(--success)}
+.net small{font-size:14px;color:var(--ink2)}
+.net small b{font-size:inherit;letter-spacing:0;color:var(--ink)}
+.cov{margin:14px 0 4px}
+.cvt{position:relative;height:12px;border-radius:999px;background:var(--lineSoft);display:flex;overflow:hidden}
+.cvt i{display:block;height:100%;transition:width .3s}
+#covF{background:var(--success)}
+#covX{background:repeating-linear-gradient(135deg,#0e8a4a 0 5px,#3bb273 5px 10px)}
+.cvl{display:flex;justify-content:space-between;font-size:12px;color:var(--ink3);margin-top:6px;font-variant-numeric:tabular-nums}
+.bars{display:flex;flex-direction:column;gap:10px}
+.br{display:grid;grid-template-columns:130px minmax(0,1fr) 84px;gap:12px;align-items:center;font-size:13.5px;color:var(--ink2)}
+.br .tr{height:10px;border-radius:999px;background:var(--lineSoft);overflow:hidden}
+.br .tr i{display:block;height:100%;border-radius:999px;transition:width .3s}
+.br.p i{background:var(--ink3)}.br.e i{background:var(--success)}
+.br b{text-align:right;color:var(--ink);font-variant-numeric:tabular-nums}
+.br.e b{color:var(--success)}
+.res{font-size:15px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.res b{color:var(--success)}
+.math{font-size:13px;color:var(--ink2);margin-top:10px;display:grid;grid-template-columns:1fr auto;gap:3px 12px;font-variant-numeric:tabular-nums}
+.math .t{color:var(--ink);font-weight:600}
+.fine{font-size:12.5px;color:var(--ink3);margin-top:10px}
+.who-h{font-size:14px;font-weight:600;margin:22px 0 10px}
+.sum{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px 20px;margin-top:28px;font-variant-numeric:tabular-nums}
+.sum h2{font-size:16px;font-weight:600;margin-bottom:8px}
+.sum .r{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:14.5px;color:var(--ink2)}
+.sum .r.t{border-top:1px solid var(--line);margin-top:6px;padding-top:10px;color:var(--ink);font-weight:600;font-size:15.5px}
+.sum .note{font-size:13px;color:var(--ink2);margin-top:8px}
+.banner{display:flex;gap:10px;padding:13px 15px;border-radius:12px;font-size:14.5px;margin-top:20px}
+.banner svg{flex:none;margin-top:2px}
+.banner strong{display:block;color:var(--ink)}
+.banner.danger{background:#FBEAE9;color:var(--danger)}
+.foot{position:fixed;left:248px;right:0;bottom:0;z-index:20;background:rgba(241,244,250,.94);backdrop-filter:blur(14px);border-top:1px solid var(--line)}
+.foot .in{max-width:720px;margin:0 auto;padding:14px 40px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.foot .tt{font-size:13px;color:var(--ink2);min-width:0}
+.foot .tt b{display:block;font-size:19px;color:var(--ink);font-variant-numeric:tabular-nums}
+.foot .btn{min-height:50px;padding:0 26px}
+.btn:disabled{opacity:.65;cursor:not-allowed}
+.spin{width:15px;height:15px;border-radius:50%;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;animation:rot .8s linear infinite}
+.code{display:inline-flex;align-items:center;gap:12px;background:var(--surface2);border:1px dashed var(--line);border-radius:14px;padding:10px 12px 10px 18px;margin-top:18px}
+.code b{font:600 24px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:3px}
+.code button{border:1px solid var(--line);background:var(--surface);border-radius:9px;font:600 13px var(--sans);padding:0 12px;min-height:36px;cursor:pointer}
+.cgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;text-align:left;margin-top:22px}
+.cgrid div{background:var(--surface2);border:1px solid var(--lineSoft);border-radius:12px;padding:12px 14px}
+.cgrid span{display:block;font-size:11.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink3);font-weight:600}
+.cgrid b{display:block;font-size:14.5px;margin-top:3px;font-variant-numeric:tabular-nums}
+.instr{text-align:left;margin-top:24px;border-top:1px solid var(--lineSoft);padding-top:20px}
+.instr h3{font-size:16px;font-weight:600;margin-bottom:4px}
+.instr .ad{font-size:14px;color:var(--ink2);margin-bottom:14px}
+.instr ol{list-style:none;display:flex;flex-direction:column;gap:12px;font-size:14.5px;color:var(--ink2);counter-reset:i}
+.instr li{display:grid;grid-template-columns:26px 1fr;gap:10px;counter-increment:i}
+.instr li::before{content:counter(i);width:26px;height:26px;border-radius:50%;background:var(--accentSoft);color:var(--accentDark);font-weight:700;font-size:12.5px;display:flex;align-items:center;justify-content:center}
+.instr li b{color:var(--ink)}
+.close{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink2);border:1px solid var(--line);background:var(--surface)}
+@media(max-width:1023px){.tabs{display:none!important}.foot{left:0}.foot .in{padding:12px 16px}main{padding:16px 16px 130px}}
+@media(max-width:400px){.dr2{grid-template-columns:1fr}}
+@media(max-width:640px){.dts{grid-template-columns:1fr;gap:12px}.dg{padding:14px}.car{grid-template-columns:52px minmax(0,1fr);padding:10px 12px 10px 10px}.cth{width:52px;height:40px}.ccap{grid-column:2;justify-self:start}.rh{padding:18px;grid-template-columns:minmax(0,1fr) auto}.rh h2{font-size:24px}.rb{padding:18px}.prow{grid-template-columns:1fr;gap:4px}.sugg{padding:0}.br{grid-template-columns:1fr auto;gap:4px 10px}.br .tr{grid-column:1/-1;grid-row:2}.cgrid{grid-template-columns:1fr}.foot .btn{padding:0 18px}.code b{font-size:20px;letter-spacing:2px}}
+.nav a .cnt{margin-left:auto;background:var(--accent);color:#fff;font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 7px;min-width:20px;text-align:center}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="rail">
+<a class="logo" href="onboarding.html" aria-label="{{APP_NAME}} home"><span class="wm">{{APP_NAME}}</span></a>
+<nav class="nav" aria-label="Main">
+<a href="onboarding.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"></path></svg>Home</a>
+<a href="vehicles.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16V11l2-5h10l2 5v5M3 16h18v3h-3M6 19H3"></path><circle cx="7.5" cy="16" r="1.5"></circle><circle cx="16.5" cy="16" r="1.5"></circle></svg>Vehicles</a>
+<a href="trips.html" aria-current="page"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"></rect><path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2"></path></svg>Trips</a>
+<a href="requests.html" class="rqn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l3-8h12l3 8v6a1 1 0 01-1 1H4a1 1 0 01-1-1z"></path><path d="M3 13h5l1.5 2.5h5L16 13h5"></path></svg>Requests<span class="cnt">2</span></a>
+<a href="browse.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>Browse</a>
+<a href="bookings.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1z"></path><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M9 13l2 2 4-4"></path></svg>Bookings</a>
+<a href="account.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg>Account</a>
+</nav>
+<div class="me"><a class="av" href="account.html" aria-label="Account">AR</a><div><b>Member</b><a href="sign-up.html?mode=in">Sign out</a></div></div>
+</aside>
+<header class="top">
+<a class="logo" href="onboarding.html" aria-label="{{APP_NAME}} home"><span class="wm">{{APP_NAME}}</span></a>
+<a href="trips.html" class="close" aria-label="Close and go to trips"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></a>
+</header>
+<main data-screen-label="M10 Plan a trip">
+<div class="wrap">
+<details class="review" open>
+<summary>Review state</summary>
+<div class="chips" id="rStates"><button data-s="default">Default</button><button data-s="rent">Rental on</button><button data-s="blocked">Rental blocked</button><button data-s="dates">Date errors</button><button data-s="saving">Saving</button><button data-s="confirmed">Confirmed</button></div>
+</details>
+<div id="form">
+<a class="back" href="trips.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>Trips</a>
+<h1>Plan a trip</h1>
+<p class="lead">Reserve a secure spot for your car, then decide if it earns while you're away.</p>
+<div class="banner danger" id="sum" role="alert" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.01"></path></svg><div><strong id="sumT">Two things need a fix</strong>Check the highlighted fields below.</div></div>
+<section class="blk"><h2>Which car?</h2><div class="cars" id="cars" role="radiogroup" aria-label="Vehicle"></div></section>
+<section class="blk"><h2>When?<small id="pDays" class="tnum"></small></h2>
+<div class="where" style="margin-bottom:12px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0112 2.5a7 7 0 017 7C19 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle></svg><div><b>{{LOT_NAME}}</b>{{CLAIM_SHUTTLE_SHORT}}</div></div>
+<div class="dts">
+<div class="dg"><b><i></i>Drop-off</b><div class="dr2"><div class="f" id="f-dd"><label for="dd">Date</label><input id="dd" type="date"><p class="er"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.01"></path></svg><span></span></p></div><div class="f"><label for="dt">Time</label><input id="dt" type="time"></div></div><p class="hint">Arrive 90 minutes before your flight.</p></div>
+<div class="dg ret"><b><i></i>Return</b><div class="dr2"><div class="f" id="f-rd"><label for="rd">Date</label><input id="rd" type="date"><p class="er"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.01"></path></svg><span></span></p></div><div class="f"><label for="rt">Time</label><input id="rt" type="time"></div></div><p class="hint">When you land. We'll have the car ready.</p></div>
+</div>
+</section>
+<section class="rent" id="rent" aria-labelledby="rentH">
+<div class="rh"><h2 id="rentH">Rent my car <em>while I'm away</em></h2><p>Verified travelers rent it while you're gone. You keep the earnings.</p><input type="checkbox" class="sw" id="rentSw" aria-labelledby="rentH"></div>
+<div class="rb off" id="rOff">Turn this on to set a daily price and see what your car could earn on this trip. Your parking is booked either way.</div>
+<div class="rb" id="rBlock" hidden><div class="blockm"><span class="li"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 018 0v3"></path></svg></span><div><b id="bWhy"></b><p id="bWhyL"></p><a id="bFix" href="#"></a></div></div></div>
+<div class="rb" id="rOn" hidden>
+<div class="prow"><div class="f" id="f-price"><label for="price">Daily price</label><div class="pin"><span>$</span><input id="price" type="number" inputmode="decimal" min="20" max="250" step="1" value="45"><em>/ day</em></div><p class="er"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.01"></path></svg><span></span></p></div><p class="sugg">Similar cars at {{AIRPORT_CODE}}: <b id="sug">$38–$52</b> · <button type="button" id="useSug">Use $45</button></p></div>
+<p class="win"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg><span>Available to renters: <b id="rWin"></b></span></p>
+<div class="est">
+<div class="net"><span id="netL">Your trip after rental</span><b id="netV"></b><small id="netS"></small></div>
+<div class="cov" aria-hidden="true"><div class="cvt"><i id="covF"></i><i id="covX"></i></div><div class="cvl"><span>$0</span><span id="covP"></span></div></div>
+<div class="math"><span id="eGross"></span><span id="eGrossA"></span><span>Service fee ({{FEE_PCT}}%)</span><span id="eFee"></span><span class="t">You earn</span><span class="t" id="eNet"></span></div>
+
+<p class="fine">Estimate assumes every available day is booked. You're paid only for days rented, 2 days after your car is returned.</p>
+</div>
+<p class="who-h">Who can rent your car</p>
+<ul class="who">
+<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-11"></path></svg><span><b>Verified members only.</b> {{CLAIM_RENTER_VETTING}}</span></li>
+<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-11"></path></svg><span><b>Pickup and return at our lot.</b> Attendants photograph your car each time it leaves and comes back.</span></li>
+<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-11"></path></svg><span>{{CLAIM_INSURANCE}}</span></li>
+<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-11"></path></svg><span><b>Back in its spot the day before you land.</b></span></li>
+</ul>
+</div>
+</section>
+<section class="sum" aria-labelledby="sumH"><h2 id="sumH">Parking</h2><div class="r"><span id="pLine"></span><span id="pAmt"></span></div><div class="r"><span>Service fee</span><span>$0.00</span></div><div class="r t"><span>Total</span><span id="pTot"></span></div><p class="note">We place a hold on your card, not a charge. You're charged at drop-off. Free cancellation up to 24 hours before.</p></section>
+</div>
+<section id="done" class="card status" role="status" hidden>
+<span class="badge b-success"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-11"></path></svg>Confirmed</span>
+<div class="ic ic-success"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-11"></path></svg></div>
+<h2>Your spot is reserved</h2>
+<p>Show this code at the gate on <b id="cDropT" style="color:var(--ink)"></b>. We've texted it to you too.</p>
+<div class="code"><b>PK-48217</b><button type="button" id="copy">Copy</button></div>
+<div class="cgrid"><div><span>Car</span><b id="cCar"></b></div><div><span>Parking</span><b id="cPark"></b></div><div><span>Drop-off</span><b id="cDrop"></b></div><div><span>Return</span><b id="cRet"></b></div><div style="grid-column:1/-1"><span>Rental</span><b id="cRent"></b></div></div>
+<div class="instr"><h3>Drop-off instructions</h3><p class="ad">{{LOT_NAME}} · {{LOT_ADDRESS}}</p>
+<ol><li><span>Follow signs to the <b>{{LOT_NAME}}</b> and show your code at the gate.</span></li><li><span>An attendant walks around the car with you and <b>takes condition photos</b>. About 5 minutes.</span></li><li><span>Leave your key with the attendant. {{CLAIM_SHUTTLE}}</span></li></ol></div>
+<div class="cta"><a class="btn btn-accent" href="trip-detail.html?state=booked">View trip details</a><a class="btn btn-ghost" href="trips.html">All trips</a><a class="btn btn-ghost" href="#">Add to calendar</a></div>
+</section>
+</div>
+</main>
+</div>
+<div class="foot" id="foot"><div class="in"><div class="tt"><b id="fTot"></b><span id="fSub">Hold on your card, not a charge</span></div><button type="button" class="btn btn-accent" id="go">Book parking</button></div></div>
+<script>(function(){
+var $=function(id){return document.getElementById(id)};
+var CARS=window.__study.planCars();
+var RATE={{PARKING_RATE}},FEE={{FEE_PCT}}/100,S={car:'mine',rent:false,price:45,err:{}},busy=false;
+var ER='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.01"></path></svg>';
+function money(n){return '$'+n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',')}
+function dt(d,t){if(!d)return null;var x=new Date(d+'T'+(t||'00:00'));return isNaN(x)?null:x}
+function fD(x,o){return x.toLocaleDateString('en-US',o||{weekday:'short',month:'short',day:'numeric'})}
+function fT(x){return x.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}
+function span(){var a=dt($('dd').value,$('dt').value),b=dt($('rd').value,$('rt').value);if(!a||!b||b<=a)return null;return{a:a,b:b,days:Math.ceil((b-a)/864e5)}}
+function cars(){
+ $('cars').innerHTML=Object.keys(CARS).map(function(k){var c=CARS[k];
+  return '<label class="car'+(S.car===k?' on':'')+'"><input type="radio" name="car" value="'+k+'"'+(S.car===k?' checked':'')+'><span class="cth"></span><span class="cb"><b>'+c.n+'</b><span>'+c.mm+'</span><span class="pl">'+c.pl+'</span></span><span class="ccap '+(c.ok?'y':'n')+'">'+(c.ok?'Can rent':'Parking only')+'</span></label>'}).join('');
+ document.querySelectorAll('input[name=car]').forEach(function(r){r.onchange=function(){S.car=r.value;if(!CARS[r.value].ok)S.rent=false;else S.price=CARS[r.value].def;cars();$('price').value=S.price;calc()}});
+}
+function calc(){
+ var c=CARS[S.car],sp=span(),days=sp?sp.days:0,park=RATE*days;
+ $('pDays').textContent=sp?days+(days===1?' day':' days'):'\u2014';
+ $('pLine').textContent=sp?money(RATE)+' \u00d7 '+days+(days===1?' day':' days'):'Pick your dates';
+ $('pAmt').textContent=sp?money(park):'\u2014';
+ $('pTot').textContent=sp?money(park)+' USD':'\u2014';
+ $('fTot').textContent=sp?money(park):'\u2014';
+ var panel=$('rent');panel.classList.toggle('blocked',!c.ok);panel.classList.toggle('on',!!(c.ok&&S.rent));
+ $('rentSw').disabled=!c.ok||busy;$('rentSw').checked=!!(c.ok&&S.rent);
+ $('rBlock').hidden=c.ok;$('rOff').hidden=!c.ok||S.rent;$('rOn').hidden=!(c.ok&&S.rent);
+ if(!c.ok){$('bWhy').textContent=c.why;$('bWhyL').textContent=c.whyL;$('bFix').textContent=c.fix+' \u2192';$('bFix').href=c.href}
+ if(c.ok){$('sug').textContent=c.sug}
+ var avail=sp?Math.max(0,days-2):0,price=parseFloat($('price').value)||0,gross=price*avail,net=gross*(1-FEE);
+ if(sp&&avail){var s=new Date(sp.a);s.setDate(s.getDate()+1);var e=new Date(sp.b);e.setDate(e.getDate()-1);$('rWin').textContent=fD(s,{month:'short',day:'numeric'})+' \u2013 '+fD(e,{month:'short',day:'numeric'})+' \u00b7 '+avail+(avail===1?' day':' days')}
+ else $('rWin').textContent=sp?'Trip too short to rent (3+ days needed)':'Pick your dates';
+ $('eGross').textContent=money(price)+' \u00d7 '+avail+' days';$('eGrossA').textContent=money(gross);
+ $('eFee').textContent='\u2212'+money(gross*FEE);$('eNet').textContent=money(net);
+ var diff=net-park,nv=$('netV');
+ if(!sp||!avail){$('netL').textContent='Your trip after rental';nv.textContent='\u2014';nv.className='';$('netS').textContent=sp?'Trips need 3+ days to rent.':'Pick your dates to see an estimate.';$('covF').style.width='0';$('covX').style.width='0';$('covP').textContent=''}
+ else{
+  var over=diff>=0,tot=over?net:park;
+  $('netL').textContent=over?'You come out ahead':'You pay after rental';
+  nv.textContent=over?'+'+money(diff):money(-diff);nv.className=over?'pos':'';
+  $('netS').innerHTML=over?'Earnings cover your <b>'+money(park)+'</b> parking in full.':'Earnings cover <b>'+Math.round(net/park*100)+'%</b> of your '+money(park)+' parking.';
+  $('covF').style.width=(Math.min(net,park)/tot*100)+'%';$('covX').style.width=(over?diff/tot*100:0)+'%';
+  $('covP').textContent=over?money(park)+' parking \u00b7 '+money(net)+' earned':money(park)+' parking';
+ }
+ $('fSub').textContent=c.ok&&S.rent&&avail?'Est. earnings '+money(net):'Hold on your card, not a charge';
+ $('go').textContent=c.ok&&S.rent?'Book & list my car':'Book parking';
+}
+function mark(k,m){var f=$('f-'+k);f.classList.toggle('bad',!!m);f.querySelector('.er span').textContent=m||'';var i=f.querySelector('input');if(m)i.setAttribute('aria-invalid','true');else i.removeAttribute('aria-invalid')}
+function validate(){
+ var e={},a=dt($('dd').value,$('dt').value),b=dt($('rd').value,$('rt').value),now=new Date();
+ if(!$('dd').value)e.dd='Pick a drop-off date.';else if(a<now)e.dd='Drop-off can\u2019t be in the past.';else if(a-now<2*36e5)e.dd='Drop-off needs to be at least 2 hours from now.';
+ if(!$('rd').value)e.rd='Pick a return date.';else if(a&&b<=a)e.rd='Return has to be after drop-off. Check the date and time.';else if(a&&(b-a)/864e5>30)e.rd='Stays are up to 30 days during the pilot.';
+ if(CARS[S.car].ok&&S.rent){var p=parseFloat($('price').value);if(!(p>=20&&p<=250))e.price='Set a daily price between $20 and $250.'}
+ ['dd','rd','price'].forEach(function(k){mark(k,e[k])});
+ var n=Object.keys(e).length;$('sum').hidden=!n;
+ if(n){$('sumT').textContent=(n===1?'One thing needs':n===2?'Two things need':'Three things need')+' a fix';}
+ return !n;
+}
+function lock(on){busy=on;document.querySelectorAll('#form input').forEach(function(i){i.disabled=on});$('go').disabled=on;$('go').innerHTML=on?'<span class="spin" aria-hidden="true"></span>Booking\u2026':'';if(!on)calc();else $('rentSw').disabled=true}
+function confirm(){
+ var c=CARS[S.car],sp=span()||{a:new Date('2026-10-12T08:30'),b:new Date('2026-10-19T18:40'),days:8};
+ var rent=c.ok&&S.rent,avail=Math.max(0,sp.days-2),net=(parseFloat($('price').value)||0)*avail*(1-FEE);
+ $('cCar').textContent=c.n+' \u00b7 '+c.pl;
+ $('cDrop').textContent=fD(sp.a)+', '+fT(sp.a);$('cRet').textContent=fD(sp.b)+', '+fT(sp.b);
+ $('cPark').textContent=money(RATE*sp.days)+' USD hold';
+ $('cRent').textContent=rent?'Listed at '+money(parseFloat($('price').value)||0)+'/day \u00b7 est. '+money(net):'Parking only';
+ $('cDropT').textContent=fD(sp.a,{weekday:'long',month:'short',day:'numeric'})+' at '+fT(sp.a);
+ $('form').hidden=true;$('foot').hidden=true;$('done').hidden=false;window.scrollTo(0,0);window.__study.signal('confirmed',{rent:rent,price:parseFloat($('price').value)||0,days:sp.days,estEarnings:Math.round(net*100)/100});
+}
+$('go').onclick=function(){if(busy)return;if(!validate()){var f=document.querySelector('.f.bad input');if(f)f.focus();return}window.__study.pause('book',{rent:!!(CARS[S.car].ok&&S.rent),price:parseFloat($('price').value)||0}).then(function(){lock(true);setTimeout(function(){lock(false);confirm()},1400)})};
+$('rentSw').onchange=function(){S.rent=this.checked;calc()};
+['dd','dt','rd','rt'].forEach(function(k){$(k).oninput=function(){if(k==='dd'||k==='rd')mark(k,null);calc()}});
+$('price').oninput=function(){mark('price',null);calc()};
+$('useSug').onclick=function(){$('price').value=CARS[S.car].def;mark('price',null);calc()};
+$('copy').onclick=function(){try{navigator.clipboard.writeText('PK-48217')}catch(e){}this.textContent='Copied'};
+function reset(){busy=false;S={car:'mine',rent:false,price:45,err:{}};$('dd').value=window.__study.date(14);$('dt').value='08:30';$('rd').value=window.__study.date(21);$('rt').value='18:40';$('price').value=45;['dd','rd','price'].forEach(function(k){mark(k,null)});$('sum').hidden=true;$('form').hidden=false;$('foot').hidden=false;$('done').hidden=true;document.querySelectorAll('#form input').forEach(function(i){i.disabled=false});$('go').disabled=false}
+var P={
+ default:function(){},
+ rent:function(){S.rent=true},
+ blocked:function(){S.car='suv'},
+ dates:function(){$('dd').value='2026-09-01';$('rd').value='2026-08-30';cars();calc();validate()},
+ saving:function(){S.rent=true;cars();calc();lock(true)},
+ confirmed:function(){S.rent=true;cars();calc();confirm()}
+};
+function preset(s){reset();P[s]();if(s!=='dates'&&s!=='saving'&&s!=='confirmed'){cars();calc()}
+ document.querySelectorAll('#rStates button').forEach(function(b){b.classList.toggle('on',b.dataset.s===s)})}
+document.querySelectorAll('#rStates button').forEach(function(b){b.onclick=function(){preset(b.dataset.s)}});
+var q=new URLSearchParams(window.__qs);
+preset(P[q.get('state')]?q.get('state'):'default');
+if(CARS[q.get('car')]&&!q.get('state')){S.car=q.get('car');cars();calc()}
+})();
+</script>
+<script>(function(){
+var css='.vsw{display:flex;background:var(--surface2,#f7f9fd);border:1px solid var(--line,#dae0ec);border-radius:999px;padding:3px;gap:2px;font:600 12.5px Inter,system-ui,sans-serif;flex:none}.vsw a,.vsw span{flex:1;text-align:center;padding:6px 10px;border-radius:999px;color:var(--ink2,#4e5b76);text-decoration:none;white-space:nowrap;font-weight:600}.vsw span{background:var(--ink,#0a1a36);color:#fff}.vsw a:hover{color:var(--ink,#0a1a36);background:var(--surface,#fff)}.rail .vsw{margin:0 4px}.top .vsw{margin-left:auto;margin-right:10px}@media(max-width:400px){.top .vsw a,.top .vsw span{padding:6px 7px;font-size:11.5px}}';
+var st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
+function mk(){var d=document.createElement('div');d.className='vsw';d.setAttribute('role','group');d.setAttribute('aria-label','Switch view');d.innerHTML='<span aria-current="page">Member</span><a href="staff-today.html">Staff</a><a href="admin-home.html">Admin</a>';return d}
+var me=document.querySelector('.rail .me');if(me)me.parentNode.insertBefore(mk(),me);
+var top=document.querySelector('header.top');if(top&&top.lastElementChild)top.insertBefore(mk(),top.lastElementChild);
+})();
+</script>
+</body>
+</html>
