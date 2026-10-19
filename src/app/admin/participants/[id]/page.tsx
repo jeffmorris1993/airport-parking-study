@@ -5,6 +5,7 @@ import { fmtMs, participantDetail, SEGMENT_LABEL } from '@/lib/server/analytics'
 import { AdminShell, Card, H1, Pill } from '@/components/admin/ui';
 import { CHECKPOINTS, SCREENER, SURVEY } from '@config/questions';
 import { ReplayPlayer } from './ReplayPlayer';
+import { DeleteParticipant } from './DeleteParticipant';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,11 +73,12 @@ export default async function ParticipantPage({ params }: { params: Promise<{ id
       <H1 sub={<>Started {new Date(p.created_at).toLocaleString('en-US', { timeZone: 'America/Chicago' })} · {p.device || 'unknown device'}{p.viewport_w ? ` (${p.viewport_w}×${p.viewport_h})` : ''}{p.ref_code ? ` · referred by ${p.ref_code}` : ''}</>}>
         <span className="font-mono">{p.code}</span>
       </H1>
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div className="mb-6 flex flex-wrap items-start gap-2">
         <Pill tone={d.status === 'completed' ? 'good' : d.status === 'abandoned' ? 'bad' : 'neutral'}>{d.status.replace('_', ' ')}</Pill>
         <Pill>{SEGMENT_LABEL[d.segment]}</Pill>
         {p.journey_order?.length ? <Pill>Order: {p.journey_order.join(' → ')}</Pill> : null}
         <Pill>{events.length} events</Pill>
+        <span className="ml-auto"><DeleteParticipant id={p.id} code={p.code} /></span>
       </div>
 
       <Card title="Session replay" className="mb-6" right={<span className="text-[12.5px] text-ink3">{chunks.length} chunks · inputs are masked</span>}>

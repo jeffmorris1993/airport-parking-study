@@ -33,6 +33,8 @@ export interface Store {
   addInterviewContact(c: InterviewContact): Promise<void>;
   listInterviewContacts(): Promise<InterviewContact[]>;
   isAdminEmail(email: string): Promise<boolean>;
+  /** Remove a participant everywhere: answers, events, contact details, and replay files. */
+  deleteParticipant(id: string): Promise<void>;
 }
 
 let cached: Store | null = null;
@@ -155,6 +157,16 @@ function supabaseStore(db: SupabaseClient): Store {
     },
     async listInterviewContacts() {
       return must(await db.from('interview_contacts').select('*').order('created_at')) as InterviewContact[];
+    },
+    async deleteParticipant(id) {
+      const chunks = (await db.from('replay_chunks').select('storage_path').eq('participant_id', id)).data || [];
+      const paths = chunks.map((c: { storage_path: string }) => c.storage_path);
+      for (let i = 0; i < paths.length; i += 100) {
+        const r = await db.storage.from(REPLAY_BUCKET).remove(paths.slice(i, i + 100));
+        if (r.error) throw r.error;
+      }
+      // Answers, events, replay rows and contact details cascade from the participant row.
+      must(await db.from('participants').delete().eq('id', id));
     },
     async isAdminEmail(email) {
       const e = email.toLowerCase();
@@ -311,5 +323,18 @@ function localStore(): Store {
     async isAdminEmail() {
       return true;
     },
+    deleteParticipant: (id) =>
+      locked(async () => {
+        await fs.rm(file(path.join('replays', id)), { recursive: true, force: true });
+        const keep = <T extends { participant_id?: string; id?: string }>(xs: T[]) => xs.filter((x) => (x.participant_id ?? x.id) !== id);
+        await write('participants.json', keep(await read<Participant[]>('participants.json', [])));
+        await write('responses.json', keep(await read<ResponseRow[]>('responses.json', [])));
+        await write('replay_chunks.json', keep(await read<ReplayChunk[]>('replay_chunks.json', [])));
+        await write('interview_contacts.json', keep(await read<InterviewContact[]>('interview_contacts.json', [])));
+        const events = (await readLines<EventRow>('events.jsonl')).filter((e) => e.participant_id !== id);
+        await fs.writeFile(file('events.jsonl'), events.map((e) => JSON.stringify(e)).join('\n') + (events.length ? '\n' : ''));
+        seenLoaded = false;
+        seen.clear();
+      }),
   };
 }

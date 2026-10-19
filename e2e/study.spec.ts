@@ -108,3 +108,20 @@ test('admin pages render with data', async ({ page }) => {
   expect(csv.status()).toBe(200);
   expect(await csv.text()).toContain('q8_wtp');
 });
+
+test('admin can delete a participant, including replay files', async ({ page, request }) => {
+  await consent(page);
+  await page.getByRole('radio', { name: 'No' }).click();
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await expect(page.getByText('only open to people 18 and older')).toBeVisible();
+  await expect.poll(() => stored.participants().find((p) => p.screen_out_reason === 'under_18' && p.status === 'screened_out')?.id, { timeout: 15_000 }).toBeTruthy();
+  const p = stored.participants().filter((x) => x.screen_out_reason === 'under_18').at(-1)! as { id: string; code: string };
+  expect((await request.delete(`/admin/api/participants/${p.id}`, { data: { code: 'WRONG' } })).status()).toBe(400);
+  await page.goto(`/admin/participants/${p.id}`);
+  await page.getByRole('button', { name: 'Delete participant' }).click();
+  await page.getByLabel('Participant code').fill(p.code);
+  await page.getByRole('button', { name: 'Delete permanently' }).click();
+  await expect(page).toHaveURL(/\/admin\/participants$/);
+  expect(stored.participants().some((x) => x.id === p.id)).toBe(false);
+  expect(stored.events().some((e) => e.participant_id === p.id)).toBe(false);
+});
