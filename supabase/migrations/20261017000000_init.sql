@@ -155,7 +155,11 @@ select
   p.journey_order,
   p.ref_code,
   p.created_at,
-  jsonb_object_agg(r.question_id || case when r.journey <> '' then '@' || r.journey else '' end, r.value) as answers
+  coalesce(
+    jsonb_object_agg(r.question_id || case when r.journey <> '' then '@' || r.journey else '' end, r.value)
+      filter (where r.question_id is not null),
+    '{}'::jsonb
+  ) as answers
 from participants p
 left join responses r on r.participant_id = p.id
 group by p.id;

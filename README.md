@@ -31,7 +31,8 @@ Next.js 15 (App Router) on Vercel · Supabase (Postgres, Storage, Auth for admin
 1. Create a project.
 2. In **SQL Editor**, run `supabase/migrations/20261017000000_init.sql`. This creates the tables, enables RLS with no public access, creates a private `replays` storage bucket, and adds the analysis views.
 3. Add admins with `insert into admin_users (email) values ('you@example.com');`, or list them in `ADMIN_EMAILS`.
-4. In **Authentication → URL Configuration**, add `https://<your-domain>/admin/auth/callback` to the redirect URLs.
+4. In **Authentication → URL Configuration**, set the Site URL to your Vercel URL and add `https://<your-domain>/admin/auth/callback` to the redirect URLs.
+5. Supabase's built-in email only delivers to members of your Supabase organization. Either invite each admin under **Organization → Team**, or set up custom SMTP (for example Resend) under **Authentication → Emails**.
 
 ### 2. Vercel
 
