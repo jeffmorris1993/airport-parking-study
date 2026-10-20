@@ -139,7 +139,7 @@ export function Heatmap({ screens, initial }: { screens: { id: string; title: st
         <div className="flex rounded-xl border border-line bg-surface p-1 text-[13.5px]" role="group" aria-label="Device">
           {(['all', 'mobile', 'desktop'] as const).map((d) => (
             <button key={d} onClick={() => setDevice(d)} aria-pressed={device === d} className={`rounded-lg px-3 py-1.5 font-medium capitalize ${device === d ? 'bg-accent-soft text-accent-dark' : 'text-ink2'}`}>
-              {d}
+              {d === 'desktop' ? 'Desktop & tablet' : d}
             </button>
           ))}
         </div>
@@ -182,6 +182,7 @@ export function Heatmap({ screens, initial }: { screens: { id: string; title: st
             <BarList rows={reach} total={data?.visits || 0} empty="No visits yet." />
           </Card>
           <p className="text-[12.5px] text-ink3">
+            Mobile and desktop follow the participant’s device. The prototype is phone-width on every device (a phone frame on desktop), so tap positions line up across both.
             The screen is shown in its starting state. Taps made after it changed (for example, after turning on renting) still appear at the position they happened.
             In “Each tap”, outlined rings are dead taps and dark dots are rage taps.
           </p>
