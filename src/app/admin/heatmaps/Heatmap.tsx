@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { buildSrcdoc, loadScreen } from '@/lib/client/screens';
 import { BarList, Card } from '@/components/admin/ui';
 
-type Click = { x: number; y: number; w: number; t: string; label: string | null };
+type Click = { x: number; y: number; w: number; t: string; label: string | null; pin?: 'top' | 'bottom' | null; pinOffset?: number | null };
 type Data = { clicks: Click[]; scroll: number[]; visits: number; topTargets: [string, { count: number; dead: number; rage: number }][] };
 
 const WIDTH = 390;
@@ -68,7 +68,12 @@ export function Heatmap({ screens, initial }: { screens: { id: string; title: st
     c.height = height;
     const ctx = c.getContext('2d')!;
     ctx.clearRect(0, 0, WIDTH, height);
-    const pts = data.clicks.map((p) => ({ ...p, x: p.x * (WIDTH / (p.w || WIDTH)) }));
+    // Taps on pinned bars are drawn on the bar as it appears in this preview (bottom bars sit at the page bottom here).
+    const pts = data.clicks.map((p) => ({
+      ...p,
+      x: p.x * (WIDTH / (p.w || WIDTH)),
+      y: p.pin === 'bottom' && p.pinOffset ? height - p.pinOffset : p.pin === 'top' && p.pinOffset ? p.pinOffset : p.y,
+    }));
     if (mode === 'dots') {
       for (const p of pts) {
         ctx.beginPath();

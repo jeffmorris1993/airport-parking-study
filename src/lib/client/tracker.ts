@@ -284,6 +284,18 @@ class Tracker {
     const o = { capture: true, signal: ac.signal, passive: true } as AddEventListenerOptions;
     const focusAt = new WeakMap<Element, number>();
 
+    /** For taps on a pinned bar (sticky footer/header), where it sits relative to the screen edge. */
+    const pinOf = (target: Element, e: MouseEvent): { pin: 'top' | 'bottom'; pin_offset: number } | null => {
+      for (let el: Element | null = target; el && el !== doc.body; el = el.parentElement) {
+        const pos = win.getComputedStyle(el).position;
+        if (pos === 'fixed' || pos === 'sticky') {
+          const bottom = e.clientY > win.innerHeight / 2;
+          return { pin: bottom ? 'bottom' : 'top', pin_offset: Math.round(bottom ? win.innerHeight - e.clientY : e.clientY) };
+        }
+      }
+      return null;
+    };
+
     const coords = (e: MouseEvent) => ({
       x: Math.round(e.pageX),
       y: Math.round(e.pageY),
@@ -310,7 +322,7 @@ class Tracker {
           element_id: id,
           label,
           ...c,
-          meta: { tag: el.tagName.toLowerCase(), interactive: !!interactive, surface },
+          meta: { tag: el.tagName.toLowerCase(), interactive: !!interactive, surface, ...(pinOf(target, e) ?? {}) },
         });
         if (isDead && this.step) this.step.deadClicks++;
 

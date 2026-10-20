@@ -2,6 +2,8 @@ import { requireAdmin } from '@/lib/server/admin-auth';
 import { overview } from '@/lib/server/analytics';
 import { AdminShell, BarList, Card, H1, Stat } from '@/components/admin/ui';
 import { getStore } from '@/lib/server/store';
+import { demoCount } from '@/lib/server/demo';
+import { DemoTools } from '@/components/admin/DemoTools';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +12,7 @@ export default async function AdminHome() {
   const o = await overview();
   const pct = Math.min(100, Math.round((o.qualified / o.target) * 100));
   const local = getStore().kind === 'local';
+  const demo = await demoCount();
   return (
     <AdminShell active="/admin" email={email}>
       <H1 sub="Live results from the survey and walkthrough. Numbers update as participants finish each step.">Overview</H1>
@@ -18,6 +21,8 @@ export default async function AdminHome() {
           Local mode: data is stored in ./.data on this machine, not Supabase.
         </p>
       )}
+
+      <DemoTools count={demo} />
 
       <div className="mb-6 rounded-2xl border border-line bg-surface p-5 shadow-card">
         <div className="flex flex-wrap items-baseline justify-between gap-2">

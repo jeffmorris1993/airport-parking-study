@@ -380,7 +380,15 @@ export async function heatmapData(screenId: string, device: 'mobile' | 'desktop'
   const fits = (e: EventRow) => device === 'all' || deviceOf.get(e.participant_id) === device;
   const clicks = events
     .filter((e) => (e.type === 'click' || e.type === 'dead_click' || e.type === 'rage_click') && meta(e, 'surface') === 'screen' && e.x != null && e.y != null && fits(e))
-    .map((e) => ({ x: e.x!, y: e.y!, w: e.doc_w || e.vw || 390, t: e.type, label: e.label }));
+    .map((e) => ({
+      x: e.x!,
+      y: e.y!,
+      w: e.doc_w || e.vw || 390,
+      t: e.type,
+      label: e.label,
+      pin: (meta(e, 'pin') as 'top' | 'bottom' | undefined) ?? null,
+      pinOffset: Number(meta(e, 'pin_offset')) || null,
+    }));
   const scroll = events.filter((e) => e.type === 'step_exit' && fits(e)).map((e) => Number(meta(e, 'max_scroll_pct'))).filter(Number.isFinite);
   const topTargets = new Map<string, { count: number; dead: number; rage: number }>();
   for (const c of clicks) {
