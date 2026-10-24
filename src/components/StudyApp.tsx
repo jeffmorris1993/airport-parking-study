@@ -5,7 +5,7 @@ import { STUDY, airportDisplay, type TripAirport } from '@config/study';
 import { AIRPORTS, CHECKPOINTS, airportFromAnswer, type Question } from '@config/questions';
 import { JOURNEYS, type Persona } from '@config/journeys';
 import type { ParticipantVehicle } from '@config/screen-data';
-import { buildPlan, chooseJourneyOrder, personaLabel, qualify, type Answers, type PlanStep } from '@/lib/flow/plan';
+import { buildPlan, chooseJourneyOrder, hardStopReason, personaLabel, qualify, type Answers, type HardStopReason, type PlanStep } from '@/lib/flow/plan';
 import { transport, type OutResponse } from '@/lib/client/transport';
 import { tracker } from '@/lib/client/tracker';
 import { startReplay } from '@/lib/client/replay';
@@ -187,26 +187,26 @@ export function StudyApp() {
     const q = qualify(state.answers);
     const order = state.journeyOrder ?? chooseJourneyOrder(q);
     const next: FlowState = { ...state, journeyOrder: order, cursor: state.cursor + 1 };
-    tracker.emit('qualified', { meta: { owner: q.owner, renter: q.renter, order } });
+    tracker.emit('qualified', { meta: { owner: q.owner, renter: q.renter, defaulted: q.defaulted, order } });
     const t = setTimeout(
       () =>
         commit(next, {
-          status: order.length ? 'surveyed' : 'screened_out',
+          status: 'surveyed',
           qualified_owner: q.owner,
           qualified_renter: q.renter,
           journey_order: order,
-          screen_out_reason: q.reason,
         }),
       900,
     );
     return () => clearTimeout(t);
   }, [state, current, commit]);
 
-  // Under-18 stop and journey completion statuses
+  // Hard-stop and journey completion statuses
   useEffect(() => {
     if (!state || !current) return;
-    if (current.kind === 'not_eligible' && state.answers.s_age === 'no') {
-      transport.update({ status: 'screened_out', screen_out_reason: 'under_18' });
+    if (current.kind === 'not_eligible') {
+      const reason = hardStopReason(state.answers);
+      if (reason) transport.update({ status: 'screened_out', screen_out_reason: reason });
     }
     if (current.kind === 'done') {
       transport.update({ status: 'completed', completed_at: new Date().toISOString() });
@@ -246,26 +246,32 @@ export function StudyApp() {
     .filter((x): x is { p: Extract<PlanStep, { kind: 'screen' }>; i: number } => x.p.kind === 'screen');
 
   switch (current.kind) {
-    case 'question':
+    case 'question': {
+      const qs = [current.q, ...current.extras];
       return (
         <QuestionScreen
           key={current.id}
           step={current}
-          value={state.answers[current.q.id]}
+          values={Object.fromEntries(qs.map((q) => [q.id, state.answers[q.id]]))}
           onBack={cursor > 1 ? () => go(-1) : undefined}
-          onNext={(value, ms, changes) => {
-            respond({ phase: current.phase, question_id: current.q.id, journey: '', step_id: current.id, value, ms_to_answer: ms, change_count: changes });
+          onNext={(values, ms, changes) => {
+            qs.forEach((q, i) => {
+              const value = values[q.id];
+              if (i > 0 && (value === undefined || value === '')) return; // blank optional extras: no row
+              respond({ phase: current.phase, question_id: q.id, journey: '', step_id: current.id, value, ms_to_answer: i === 0 ? ms : null, change_count: i === 0 ? changes : 0 });
+            });
             tracker.exitStep('advanced');
-            go(1, {}, (s) => ({ ...s, answers: { ...s.answers, [current.q.id]: value } }));
+            go(1, {}, (s) => ({ ...s, answers: { ...s.answers, ...values } }));
           }}
         />
       );
+    }
 
     case 'qualify':
       return <Center>Thanks. One moment…</Center>;
 
     case 'not_eligible':
-      return <NotEligible underage={state.answers.s_age === 'no'} />;
+      return <NotEligible reason={hardStopReason(state.answers)} />;
 
     case 'journey_intro': {
       const j = JOURNEYS[current.persona];
@@ -432,21 +438,26 @@ function Consent({ onAccept, error }: { onAccept: () => void; error: string | nu
 
 function QuestionScreen({
   step,
-  value: initial,
+  values: initial,
   onNext,
   onBack,
 }: {
   step: Extract<PlanStep, { kind: 'question' }>;
-  value: unknown;
-  onNext: (value: unknown, ms: number, changes: number) => void;
+  values: Record<string, unknown>;
+  onNext: (values: Record<string, unknown>, ms: number, changes: number) => void;
   onBack?: () => void;
 }) {
-  const [value, setValue] = useState<unknown>(initial);
+  const [values, setValues] = useState<Record<string, unknown>>(initial);
   const shown = useRef(Date.now());
   const changes = useRef(0);
   const q: Question = step.q;
-  const ready = isAnswered(q, value);
+  const all = [q, ...step.extras];
+  const ready = all.every((x) => isAnswered(x, values[x.id]));
   const pct = Math.round(((step.index + 1) / step.total) * 100);
+  const setVal = (id: string) => (v: unknown) => {
+    if (values[id] !== undefined) changes.current++;
+    setValues((prev) => ({ ...prev, [id]: v }));
+  };
   return (
     <Page
       footer={
@@ -456,7 +467,7 @@ function QuestionScreen({
               Back
             </button>
           )}
-          <button className="btn-primary flex-1" disabled={!ready} onClick={() => onNext(value, Date.now() - shown.current, changes.current)} data-track={`question-next:${q.id}`}>
+          <button className="btn-primary flex-1" disabled={!ready} onClick={() => onNext(values, Date.now() - shown.current, changes.current)} data-track={`question-next:${q.id}`}>
             Next
           </button>
         </div>
@@ -473,15 +484,19 @@ function QuestionScreen({
       <h1 className="text-[23px] font-semibold leading-snug tracking-[-0.3px]">{q.prompt}</h1>
       {q.help && <p className="mt-2 text-[15px] text-ink2">{q.help}</p>}
       <div className="mt-6">
-        <QuestionInput
-          q={q}
-          value={value}
-          onChange={(v) => {
-            if (value !== undefined) changes.current++;
-            setValue(v);
-          }}
-        />
+        <QuestionInput q={q} value={values[q.id]} onChange={setVal(q.id)} />
       </div>
+      {step.extras.map((x) => (
+        <div key={x.id} className="mt-9">
+          <h2 className="text-[18px] font-semibold leading-snug tracking-[-0.2px]">
+            {x.prompt} {x.optional && <span className="text-[13.5px] font-normal text-ink3">Optional</span>}
+          </h2>
+          {x.help && <p className="mt-2 text-[15px] text-ink2">{x.help}</p>}
+          <div className="mt-4">
+            <QuestionInput q={x} value={values[x.id]} onChange={setVal(x.id)} />
+          </div>
+        </div>
+      ))}
     </Page>
   );
 }
@@ -561,15 +576,19 @@ function JourneyIntro({
   );
 }
 
-function NotEligible({ underage }: { underage: boolean }) {
+function NotEligible({ reason }: { reason: HardStopReason | null }) {
+  const message =
+    reason === 'under_18'
+      ? 'This study is only open to people 18 and older, so we’ll stop here. Thanks for your interest.'
+      : reason === 'no_air_travel'
+        ? 'This study is for people who fly at least occasionally, and your answers tell us it isn’t the right fit, so we’ll stop here. Thanks for your interest.'
+        : reason === 'no_license'
+          ? 'This study needs participants with a valid driver’s license, so we’ll stop here. Thanks for your interest.'
+          : 'Your answers are recorded and really help. The next part of the study is for people with a different travel pattern, so you’re all done. Thanks for your time.';
   return (
     <Page>
       <h1 className="serif text-[40px] leading-[1.05]">Thank you</h1>
-      <p className="mt-4 text-[17px] leading-relaxed text-ink2">
-        {underage
-          ? 'This study is only open to people 18 and older, so we’ll stop here. Thanks for your interest.'
-          : 'Your answers are recorded and really help. The next part of the study is for people with a different travel pattern, so you’re all done. Thanks for your time.'}
-      </p>
+      <p className="mt-4 text-[17px] leading-relaxed text-ink2">{message}</p>
     </Page>
   );
 }

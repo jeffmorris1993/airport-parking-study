@@ -5,7 +5,7 @@ export type Answers = Record<string, unknown>;
 
 export type PlanStep =
   | { kind: 'consent'; id: 'consent' }
-  | { kind: 'question'; id: string; phase: 'screener' | 'survey'; q: Question; index: number; total: number }
+  | { kind: 'question'; id: string; phase: 'screener' | 'survey'; q: Question; extras: Question[]; index: number; total: number }
   | { kind: 'qualify'; id: 'qualify' }
   | { kind: 'not_eligible'; id: 'not_eligible' }
   | { kind: 'journey_intro'; id: string; persona: Persona; number: number; of: number }
@@ -13,30 +13,41 @@ export type PlanStep =
   | { kind: 'interview'; id: 'interview' }
   | { kind: 'done'; id: 'done' };
 
-export type Qualification = { owner: boolean; renter: boolean; reason: string | null };
+export type Qualification = { owner: boolean; renter: boolean; defaulted: Persona | null };
 
-/** Persona rules from the prospectus (p.8). */
+/**
+ * Persona rules from the prospectus (p.8). Age, flying, and license are hard
+ * stops handled in buildPlan, so everyone reaching this point runs a journey:
+ * participants matching neither persona default by vehicle.
+ */
 export function qualify(a: Answers): Qualification {
   const yes = (k: string) => a[k] === 'yes';
-  const adult = yes('s_age');
-  const flies = yes('s_flown');
-  const parking = ['usually', 'sometimes', 'would_consider'].includes(String(a.s_paid_parking));
+  const considers = (k: string) => ['usually', 'sometimes', 'would_consider'].includes(String(a[k]));
+  const parking = considers('s_parking_onsite') || considers('s_parking_offsite');
   const scenarios = Array.isArray(a.s_rent_scenarios) ? (a.s_rent_scenarios as string[]) : [];
   const wouldRent = scenarios.length > 0 && !scenarios.includes('none');
 
-  const owner = adult && flies && yes('s_vehicle') && parking;
-  const renter = adult && flies && yes('s_license') && wouldRent;
-  let reason: string | null = null;
-  if (!owner && !renter) {
-    reason = !adult ? 'under_18' : !flies ? 'no_air_travel' : 'no_persona_match';
-  }
-  return { owner, renter, reason };
+  const owner = yes('s_vehicle') && parking;
+  const renter = yes('s_license') && wouldRent;
+  const defaulted: Persona | null = owner || renter ? null : yes('s_vehicle') ? 'owner' : 'renter';
+  return { owner, renter, defaulted };
 }
 
-/** Under-18 respondents stop right away; no further data is collected from them. */
-export function hardStop(a: Answers): boolean {
-  return a.s_age === 'no';
+export type HardStopReason = 'under_18' | 'no_air_travel' | 'no_license';
+
+/** Disqualified respondents stop right away; no further data is collected from them. */
+export function hardStopReason(a: Answers): HardStopReason | null {
+  if (a.s_age === 'under_18') return 'under_18';
+  if (a.s_flown === 'no') return 'no_air_travel';
+  if (a.s_license === 'no') return 'no_license';
+  return null;
 }
+
+const HARD_STOPS: Record<string, (a: Answers) => boolean> = {
+  s_age: (a) => a.s_age === 'under_18',
+  s_flown: (a) => a.s_flown === 'no',
+  s_license: (a) => a.s_license === 'no',
+};
 
 export function visibleQuestions(list: Question[], a: Answers) {
   return list.filter((q) => !q.when || q.when(a));
@@ -51,21 +62,38 @@ export function buildPlan(a: Answers, journeyOrder: Persona[] | null): PlanStep[
 
   const screener = visibleQuestions(SCREENER, a);
   const survey = visibleQuestions(SURVEY, a);
-  const total = screener.length + survey.length;
-  if (hardStop(a)) {
-    // Stop right after the age question; nothing more is asked of minors.
-    plan.push({ kind: 'question', id: screener[0].id, phase: 'screener', q: screener[0], index: 0, total });
-    plan.push({ kind: 'not_eligible', id: 'not_eligible' });
-    return plan;
+
+  // Fold `withPrevious` questions into the previous step; one step can carry extras.
+  type Grouped = { phase: 'screener' | 'survey'; q: Question; extras: Question[] };
+  const grouped: Grouped[] = [];
+  for (const [phase, list] of [['screener', screener], ['survey', survey]] as const) {
+    for (const q of list) {
+      const prev = grouped[grouped.length - 1];
+      if (q.withPrevious && prev && prev.phase === phase) prev.extras.push(q);
+      else grouped.push({ phase, q, extras: [] });
+    }
   }
-  screener.forEach((q, i) => plan.push({ kind: 'question', id: q.id, phase: 'screener', q, index: i, total }));
-  survey.forEach((q, i) =>
-    plan.push({ kind: 'question', id: q.id, phase: 'survey', q, index: screener.length + i, total }),
-  );
+  const total = grouped.length;
+
+  const resolve = (q: Question): Question => {
+    const hidden = q.hideOptions?.(a);
+    return hidden?.length && q.options ? { ...q, options: q.options.filter((o) => !hidden.includes(o.value)) } : q;
+  };
+
+  for (let i = 0; i < grouped.length; i++) {
+    const g = grouped[i];
+    plan.push({ kind: 'question', id: g.q.id, phase: g.phase, q: resolve(g.q), extras: g.extras.map(resolve), index: i, total });
+    // Stop right after a disqualifying answer; nothing more is asked.
+    if (HARD_STOPS[g.q.id]?.(a)) {
+      plan.push({ kind: 'not_eligible', id: 'not_eligible' });
+      return plan;
+    }
+  }
   plan.push({ kind: 'qualify', id: 'qualify' });
 
   if (!journeyOrder) return plan;
   if (!journeyOrder.length) {
+    // Legacy saved states only: new participants always get a journey.
     plan.push({ kind: 'not_eligible', id: 'not_eligible' });
     return plan;
   }
@@ -87,7 +115,7 @@ export function chooseJourneyOrder(q: Qualification): Persona[] {
   if (q.owner && q.renter) return Math.random() < 0.5 ? ['owner', 'renter'] : ['renter', 'owner'];
   if (q.owner) return ['owner'];
   if (q.renter) return ['renter'];
-  return [];
+  return q.defaulted ? [q.defaulted] : [];
 }
 
 export function personaLabel(order: Persona[] | null | undefined) {

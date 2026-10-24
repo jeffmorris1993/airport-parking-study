@@ -7,7 +7,8 @@ const ROOTS = ['public/screens', 'src', 'config'];
 const BANNED = [
   [/jeinus|jenius/i, 'brand name'],
   [/\bSFO\b/, 'old airport (SFO)'],
-  [/\$50(?![0-9])/, 'old price ($50)'],
+  // "$40–$50" and "$50–$60" are legitimate survey price ranges; only bare "$50" is the old price.
+  [/(?<!–)\$50(?![0-9–])/, 'old price ($50)'],
   [/\bStripe\b/, 'payment/ID provider (Stripe)'],
   [/\bSquare\b|\bSQUARE\b/, 'payment provider (Square)'],
   [/McDonnell|San Francisco/, 'old lot address'],

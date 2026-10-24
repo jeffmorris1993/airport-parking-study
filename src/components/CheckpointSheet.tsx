@@ -19,10 +19,13 @@ export function CheckpointSheet({
   cp,
   position,
   onSubmit,
+  onDismiss,
 }: {
   cp: Checkpoint;
   position: { n: number; of: number } | null;
   onSubmit: (a: CheckpointAnswer) => void;
+  /** Close the sheet and return to the screen; the question re-opens later. */
+  onDismiss?: () => void;
 }) {
   const [main, setMain] = useState<unknown>(undefined);
   const [follow, setFollow] = useState<unknown>(undefined);
@@ -51,11 +54,26 @@ export function CheckpointSheet({
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line" aria-hidden="true" />
         <div className="mb-1 flex items-center justify-between">
           <span className="text-[12px] font-bold uppercase tracking-[1.2px] text-accent">Quick question</span>
-          {position && position.of > 1 && (
-            <span className="text-[12.5px] tabular-nums text-ink3">
-              {position.n} of {position.of}
-            </span>
-          )}
+          <span className="flex items-center gap-2">
+            {position && position.of > 1 && (
+              <span className="text-[12.5px] tabular-nums text-ink3">
+                {position.n} of {position.of}
+              </span>
+            )}
+            {onDismiss && (
+              <button
+                type="button"
+                aria-label="Close and answer later"
+                className="grid h-7 w-7 place-items-center rounded-full text-ink3 hover:bg-line-soft"
+                onClick={onDismiss}
+                data-track={`checkpoint-dismiss:${cp.id}`}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            )}
+          </span>
         </div>
         <h2 id={`cp-${cp.id}`} ref={headRef} tabIndex={-1} className="mb-4 text-[19px] font-semibold leading-snug tracking-[-0.2px] outline-none">
           {cp.main.prompt}

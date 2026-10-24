@@ -62,10 +62,23 @@ const PATCHES = {
     ['Commercial insurance on every rental', '{{CLAIM_INSURANCE_SHORT}}'],
     ['Secure, monitored airport parking', '{{CLAIM_MONITORING_SHORT}}'],
     ['Founding rate locked, plus 24/7 support', 'Founding rate locked for good'],
+    // Payment runs itself: unpaid -> pending -> active, then the price checkpoint, then advance.
+    // unverified: regen requires design/prototype.html
+    [
+      '<button class="btn btn-accent" id="pay">Pay $50.00 USD</button>',
+      '<button class="btn btn-accent" disabled><span class="spin"></span>Processing payment\\u2026</button>',
+    ],
+    // unverified: regen requires design/prototype.html
+    [
+      '<a class="btn btn-accent" href="Jeinus Onboarding Checklist.html?id=done&mem=done">Next: add your vehicle \\u2192</a>',
+      '',
+    ],
     [
       "if(p)p.onclick=function(){set('pending');window.scrollTo(0,0);t=setTimeout(function(){set('active')},2600)};",
-      "if(p)p.onclick=function(){window.__study.pause('pay',{price:{{PRICE}}}).then(function(){set('pending');window.scrollTo(0,0);t=setTimeout(function(){set('active')},2600)})};",
+      "if(p)p.onclick=function(){set('pending');window.scrollTo(0,0)};\n if(s==='unpaid')t=setTimeout(function(){set('pending');window.scrollTo(0,0)},2200);\n if(s==='pending')t=setTimeout(function(){set('active')},2600);\n if(s==='active'&&!done){done=true;setTimeout(function(){window.__study.pause('pay',{price:{{PRICE}}}).then(function(){window.__study.signal('advance')})},1400)}",
     ],
+    // unverified: regen requires design/prototype.html
+    ['function set(s){', 'var done=false;\nfunction set(s){'],
     [/Step 2 of 3/g, 'Membership'],
   ],
   'add-vehicle': [
@@ -98,11 +111,11 @@ const PATCHES = {
     ],
     [
       'lock(true);setTimeout(function(){lock(false);confirm()},1400)};',
-      "window.__study.pause('book',{rent:!!(CARS[S.car].ok&&S.rent),price:parseFloat($('price').value)||0}).then(function(){lock(true);setTimeout(function(){lock(false);confirm()},1400)})};",
+      "window.__study.pause('book',{rent:!!(CARS[S.car].ok&&S.rent),price:ourPrice()}).then(function(){lock(true);setTimeout(function(){lock(false);confirm()},1400)})};",
     ],
     [
       "$('form').hidden=true;$('foot').hidden=true;$('done').hidden=false;window.scrollTo(0,0);",
-      "$('form').hidden=true;$('foot').hidden=true;$('done').hidden=false;window.scrollTo(0,0);window.__study.signal('confirmed',{rent:rent,price:parseFloat($('price').value)||0,days:sp.days,estEarnings:Math.round(net*100)/100});",
+      "$('form').hidden=true;$('foot').hidden=true;$('done').hidden=false;window.scrollTo(0,0);window.__study.signal('confirmed',{rent:rent,price:ourPrice(),days:sp.days,estEarnings:Math.round(net*100)/100});",
     ],
     [/JNS-7K4Q2/g, 'PK-48217', 2],
     ['Covered lot, 6 min shuttle to all terminals', '{{CLAIM_SHUTTLE_SHORT}}'],
@@ -116,7 +129,42 @@ const PATCHES = {
     ['Follow signs for <b>Lot B</b> and stop at the Jeinus gate. Show your code.', 'Follow signs to the <b>{{LOT_NAME}}</b> and show your code at the gate.'],
     [
       'Leave your key with the attendant and take the <b>shuttle to your terminal</b>. It runs every 10 minutes.',
-      'Leave your key with the attendant. {{CLAIM_SHUTTLE}}',
+      'Leave your key in the secure key drop. {{CLAIM_SHUTTLE}}',
+    ],
+    // Pricing is automated: owners don't set a daily price; we do.
+    // The patches below are unverified: regen requires design/prototype.html.
+    [
+      'Turn this on to set a daily price and see what your car could earn on this trip. Your parking is booked either way.',
+      'Turn this on to see what your car could earn on this trip. We set the daily price. Your parking is booked either way.',
+    ],
+    [
+      /<div class="prow"><div class="f" id="f-price">[\s\S]*?<button type="button" id="useSug">Use \$45<\/button><\/p><\/div>/,
+      '<div class="prow"><p class="sugg">We set the price. Similar cars at SFO: <b id="sug">$38–$52</b> · your car lists at <b id="ourP">$45/day</b></p></div>',
+    ],
+    ["var RATE={{PARKING_RATE}},FEE={{FEE_PCT}}/100,S={car:'mine',rent:false,price:45,err:{}},busy=false;", "var RATE={{PARKING_RATE}},FEE={{FEE_PCT}}/100,S={car:'mine',rent:false,err:{}},busy=false;\nfunction ourPrice(){return (CARS[S.car]&&CARS[S.car].def)||45}"],
+    [
+      "S.car=r.value;if(!CARS[r.value].ok)S.rent=false;else S.price=CARS[r.value].def;cars();$('price').value=S.price;calc()",
+      'S.car=r.value;if(!CARS[r.value].ok)S.rent=false;cars();calc()',
+    ],
+    ["if(c.ok){$('sug').textContent=c.sug}", "if(c.ok){$('sug').textContent=c.sug;$('ourP').textContent='$'+ourPrice()+'/day'}"],
+    [/var avail=sp\?Math\.max\(0,days-2\):0,price=parseFloat\(\$\('price'\)\.value\)\|\|0,/, 'var avail=sp?Math.max(0,days-2):0,price=ourPrice(),'],
+    [/ if\(CARS\[S\.car\]\.ok&&S\.rent\)\{var p=parseFloat\(\$\('price'\)\.value\);if\(!\(p>=20&&p<=250\)\)e\.price='[^']*'\}\n/, ' '],
+    ["['dd','rd','price'].forEach(function(k){mark(k,e[k])});", "['dd','rd'].forEach(function(k){mark(k,e[k])});"],
+    [/,net=\(parseFloat\(\$\('price'\)\.value\)\|\|0\)\*avail\*\(1-FEE\);/, ',net=ourPrice()*avail*(1-FEE);'],
+    [/'Listed at '\+money\(parseFloat\(\$\('price'\)\.value\)\|\|0\)\+/, "'Listed at '+money(ourPrice())+"],
+    [/\$\('price'\)\.oninput=function\(\)\{[^}]*\};\n/, ''],
+    [/\$\('useSug'\)\.onclick=function\(\)\{[^}]*\};\n/, ''],
+    [
+      /S=\{car:'mine',rent:false,price:45,err:\{\}\};(\$\('dd'\)[^;]*;\$\('dt'\)[^;]*;\$\('rd'\)[^;]*;\$\('rt'\)[^;]*;)\$\('price'\)\.value=45;\['dd','rd','price'\]/,
+      "S={car:'mine',rent:false,err:{}};$1['dd','rd']",
+    ],
+    [
+      '<b>Pickup and return at our lot.</b> Attendants photograph your car each time it leaves and comes back.',
+      '<b>Pickup and return at our lot.</b> Your car is photographed each time it leaves and comes back.',
+    ],
+    [
+      'An attendant walks around the car with you and <b>takes condition photos</b>. About 5 minutes.',
+      'Walk around the car and <b>take condition photos</b> in the app. About 5 minutes.',
     ],
   ],
   browse: [
@@ -143,7 +191,7 @@ const PATCHES = {
     ['<div class="specs">', '<div class="specs" id="carS">'],
     ['<span class="av">AR</span><div><b>Alex</b>Jeinus member since 2026', '<span class="av" id="ownAv">A</span><div><b class="own">Alex</b>Member since 2026'],
     ['780 McDonnell Rd, San Francisco. Free shuttle from every terminal, every 10 minutes.', '{{LOT_ADDRESS}} {{CLAIM_SHUTTLE}}'],
-    ['Any time, 24/7. An attendant checks you in.', 'Any time. An attendant checks you in.'],
+    ['Any time, 24/7. An attendant checks you in.', 'Any time. Check yourself in with your code.'],
     [
       '<b>Return with at least 70% charge.</b> Chargers are free at the lot if you run short.',
       '<b>Return with the same fuel or charge level.</b> The same as when you picked it up.',
@@ -181,6 +229,11 @@ const PATCHES = {
     [/'Priya Shah'/g, "''", 2],
     ['value="Priya Shah"', 'value=""'],
     ['<b>Return with 70% charge,</b> on time.', '<b>Return with the same fuel or charge,</b> on time.'],
+    // unverified: regen requires design/prototype.html
+    [
+      'Show your ID at the gate. An attendant hands you the key and walks the car with you.',
+      'Show your ID at the gate, pick up the key from the secure key drop, and photograph the car before you drive off.',
+    ],
   ],
 };
 
@@ -261,7 +314,7 @@ const NEW = {
     lead: '{{APP_NAME}} is a membership for travelers. Park your car at a secured lot near {{AIRPORT_NAME}} before your flight. If you want, a verified traveler can rent your car while you’re gone, and you keep most of what it earns.',
     points: [
       ['car', 'Park before your flight', 'Drop your car at the {{LOT_NAME}} on your way out. {{CLAIM_SHUTTLE}}'],
-      ['coin', 'Optional: rent it out', 'Turn on renting for any trip and set your own daily price. Every request comes to you to approve.'],
+      ['coin', 'Optional: rent it out', 'Turn on renting for any trip. We set the daily price, and every request comes to you to approve.'],
       ['person', 'Need a car instead?', 'Travelers can rent a member’s car at the lot, with pickup and return in the same place.'],
       ['card', 'One yearly membership', 'Founding members pay ${{PRICE}} a year (standard ${{PRICE_STANDARD}}). Parking is booked per trip.'],
     ],
@@ -273,8 +326,8 @@ const NEW = {
     lead: 'What happens to a car from the moment it’s dropped off until it’s picked up.',
     points: [
       ['shield', 'A secured lot', '{{CLAIM_MONITORING}}'],
-      ['camera', 'Condition photos every time', 'An attendant photographs the car at drop-off and every time it’s picked up or returned, so there’s always a record of its condition.'],
-      ['key', 'Keys stay with staff', 'Keys are never left in the car. Staff hand them only to the owner or to a verified renter the owner approved.'],
+      ['camera', 'Condition photos every time', 'The owner photographs the car at drop-off, and the renter photographs it at every pickup and return, so there’s always a record of its condition.'],
+      ['key', 'Keys are secure', 'Keys are never left in the car. They’re held in a locked key system and released only to the owner or to a verified renter the owner approved.'],
       ['person', 'Verified people only', '{{CLAIM_RENTER_VETTING}}'],
     ],
   },
@@ -296,9 +349,9 @@ const NEW = {
     h1: 'Protection while you drive',
     lead: 'What’s covered when you rent a member’s car.',
     points: [
-      ['shield', 'Coverage included', '{{CLAIM_INSURANCE}}'],
-      ['camera', 'Condition photos at pickup', 'An attendant walks the car with you and photographs it before you leave, so you’re never blamed for earlier damage.'],
-      ['list', 'Clear house rules', 'Every car lists its rules up front: mileage, smoking, pets, fuel, and late returns.'],
+      ['shield', 'Coverage options', 'Insurance isn’t included automatically. Buy coverage from us when you book, or show proof of your own insurance before you drive.'],
+      ['camera', 'Condition photos at pickup', 'You photograph the car yourself before you drive off, so you’re never blamed for earlier damage. The owner does the same at drop-off.'],
+      ['list', 'The owner sets the house rules', 'Each owner sets their car’s rules up front: mileage, smoking, pets, fuel, and late returns. You see them before you book.'],
       ['chat', 'Support during your trip', 'Contact the lot team any time during your rental if something comes up.'],
     ],
   },

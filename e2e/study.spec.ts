@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { answerSurvey, consent, finish, ownerJourney, participantCode, renterJourney, stored } from './helpers';
+import { answerCheckpoints, answerSurvey, consent, finish, ownerJourney, participantCode, renterJourney, stored } from './helpers';
 
 async function waitForData(code: string) {
   // Events flush every few seconds and on page hide; give the last batch time to land.
@@ -11,7 +11,7 @@ async function waitForData(code: string) {
 
 test('owner-only participant: survey, owner walkthrough, full tracking', async ({ page }) => {
   await consent(page);
-  expect(await answerSurvey(page, 'owner')).toBe(18);
+  expect(await answerSurvey(page, 'owner')).toBe(16);
   await expect(page.getByText('Car owner')).toBeVisible();
   // Airports are prefilled from the survey and can be changed; the screens follow the choice.
   await expect(page.getByLabel('Flying out of')).toHaveValue('MDW');
@@ -27,13 +27,13 @@ test('owner-only participant: survey, owner walkthrough, full tracking', async (
 
   const rs = stored.responses().filter((r) => r.participant_id === p.id);
   const ids = new Set(rs.map((r) => `${r.question_id}${r.journey ? '@' + r.journey : ''}`));
-  for (const q of ['s_age', 'q8_wtp', 'q9_concern', 'q_trip_length', 'cp1', 'cp2', 'cp3', 'cp4', 'cp5@owner', 'cp6@owner', 'h2_expect@owner', 'cp8@owner', 'cp9@owner', 'cp10@owner']) {
+  for (const q of ['s_age', 's_parking_onsite', 's_parking_offsite', 'q8_wtp', 'q9_concern', 'q_trip_length', 'cp1', 'cp2', 'cp3', 'cp4', 'cp5@owner', 'h2_pct@owner', 'cp8@owner', 'cp9@owner', 'cp10@owner']) {
     expect(ids, q).toContain(q);
   }
   expect(rs.find((r) => r.question_id === 'owner.trip_airports')!.value).toEqual({ from: 'DEN', to: 'MDW' });
   const trip = rs.find((r) => r.question_id === 'owner.trip:confirmed')!.value as { rent: boolean; price: number };
   expect(trip.rent).toBe(true);
-  expect(trip.price).toBe(52);
+  expect(trip.price).toBe(45); // pricing is automated; owners don't set it
   const vehicle = rs.find((r) => r.question_id === 'owner.vehicle:vehicle')!.value as Record<string, string>;
   expect(vehicle.make).toBe('Honda');
   expect(vehicle).not.toHaveProperty('plate');
@@ -85,18 +85,60 @@ test('dual participant sees both journeys and skips shared steps the second time
   expect(ev.some((e) => e.step_id === `${second}.signup`)).toBe(false);
 });
 
-test('screened out: answers kept, no walkthrough', async ({ page }) => {
+test('participant matching neither persona defaults into a walkthrough', async ({ page }) => {
   await consent(page);
   await answerSurvey(page, 'none');
-  await expect(page.getByText('you’re all done')).toBeVisible();
-  await expect.poll(() => stored.participants().some((p) => p.status === 'screened_out' && p.screen_out_reason === 'no_persona_match'), { timeout: 15_000 }).toBe(true);
+  // No vehicle and no interest in renting: they still continue, defaulted to the renter journey.
+  await expect(page.getByText('Traveler renting a car')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start the walkthrough' })).toBeVisible();
 });
 
 test('under 18 stops immediately', async ({ page }) => {
   await consent(page);
-  await page.getByRole('radio', { name: 'No' }).click();
+  await page.getByRole('radio', { name: '17 or under' }).click();
   await page.getByRole('button', { name: 'Next', exact: true }).click();
   await expect(page.getByText('only open to people 18 and older')).toBeVisible();
+});
+
+test('non-flyer stops immediately', async ({ page }) => {
+  await consent(page);
+  await page.getByRole('radio', { name: '25–34' }).click();
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await page.getByRole('radio', { name: 'No' }).click();
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await expect(page.getByText('people who fly at least occasionally')).toBeVisible();
+  await expect.poll(() => stored.participants().some((p) => p.status === 'screened_out' && p.screen_out_reason === 'no_air_travel'), { timeout: 15_000 }).toBe(true);
+});
+
+test('no valid license stops immediately', async ({ page }) => {
+  await consent(page);
+  await page.getByRole('radio', { name: '25–34' }).click();
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  for (const answer of ['Yes', 'Yes', 'No']) {
+    await page.getByRole('radio', { name: answer, exact: true }).click();
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
+  }
+  await expect(page.getByText('valid driver’s license, so we’ll stop here')).toBeVisible();
+  await expect.poll(() => stored.participants().some((p) => p.status === 'screened_out' && p.screen_out_reason === 'no_license'), { timeout: 15_000 }).toBe(true);
+});
+
+test('checkpoint sheet can be dismissed and resumed', async ({ page }) => {
+  await consent(page);
+  await answerSurvey(page, 'owner');
+  await page.getByRole('button', { name: 'Start the walkthrough' }).click();
+  const f = page.frameLocator('iframe');
+  await f.locator('#continue').click();
+  const sheet = page.getByRole('dialog');
+  await expect(sheet).toBeVisible();
+  await sheet.getByRole('button', { name: 'Close and answer later' }).click();
+  await expect(sheet).not.toBeVisible();
+  // The step stays gated; a pill re-opens the unanswered question.
+  const pill = page.getByRole('button', { name: /quick question/ });
+  await expect(pill).toBeVisible();
+  await pill.click();
+  await expect(sheet).toBeVisible();
+  await answerCheckpoints(page);
+  await expect(f.locator('#email')).toBeVisible({ timeout: 10_000 });
 });
 
 test('admin pages render with data', async ({ page }) => {
@@ -111,7 +153,7 @@ test('admin pages render with data', async ({ page }) => {
 
 test('admin can delete a participant, including replay files', async ({ page, request }) => {
   await consent(page);
-  await page.getByRole('radio', { name: 'No' }).click();
+  await page.getByRole('radio', { name: '17 or under' }).click();
   await page.getByRole('button', { name: 'Next', exact: true }).click();
   await expect(page.getByText('only open to people 18 and older')).toBeVisible();
   await expect.poll(() => stored.participants().find((p) => p.screen_out_reason === 'under_18' && p.status === 'screened_out')?.id, { timeout: 15_000 }).toBeTruthy();

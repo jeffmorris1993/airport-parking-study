@@ -57,6 +57,8 @@ export function ScreenStep(props: ScreenStepProps) {
   const [error, setError] = useState(false);
   const [queue, setQueue] = useState<string[]>([]);
   const [queueTotal, setQueueTotal] = useState(0);
+  /** Checkpoints the participant closed with the X, to answer later. */
+  const [deferred, setDeferred] = useState<{ ids: string[]; done: (() => void) | null } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [taskOpen, setTaskOpen] = useState(true);
   const frameRef = useRef<HTMLIFrameElement>(null);
@@ -77,6 +79,7 @@ export function ScreenStep(props: ScreenStepProps) {
   /* ---------- checkpoint queue ---------- */
 
   const openCheckpoints = useCallback((ids: string[], done: () => void) => {
+    setDeferred(null);
     const todo = ids.filter((id) => CHECKPOINTS[id] && !propsRef.current.cpDone(id));
     if (!todo.length) {
       done();
@@ -105,6 +108,23 @@ export function ScreenStep(props: ScreenStepProps) {
   useEffect(() => {
     if (queue[0]) tracker.emit('checkpoint_shown', { meta: { checkpoint: queue[0] } });
   }, [queue]);
+
+  /** Close the sheet without answering; the pending pause/advance waits until they resume. */
+  const dismiss = () => {
+    tracker.emit('checkpoint_dismissed', { meta: { checkpoint: queue[0], remaining: queue.length } });
+    tracker.checkpointClose();
+    setDeferred({ ids: queue, done: afterDone.current });
+    setQueue([]);
+    setQueueTotal(0);
+    afterDone.current = null;
+  };
+
+  const resume = () => {
+    if (!deferred) return;
+    const { ids, done } = deferred;
+    tracker.emit('checkpoint_resumed', { meta: { remaining: ids.length } });
+    openCheckpoints(ids, done ?? (() => undefined));
+  };
 
   /* ---------- advancing / back ---------- */
 
@@ -200,6 +220,8 @@ export function ScreenStep(props: ScreenStepProps) {
     let alive = true;
     advancing.current = false;
     setQueue([]);
+    setQueueTotal(0);
+    setDeferred(null);
     setSrcdoc(null);
     setError(false);
     setTaskOpen(true);
@@ -285,7 +307,17 @@ export function ScreenStep(props: ScreenStepProps) {
             This screen didn’t load. Check your connection and refresh the page.
           </div>
         )}
-        {cp && <CheckpointSheet cp={cp} position={{ n: queueTotal - queue.length + 1, of: queueTotal }} onSubmit={answer} />}
+        {cp && <CheckpointSheet cp={cp} position={{ n: queueTotal - queue.length + 1, of: queueTotal }} onSubmit={answer} onDismiss={dismiss} />}
+        {deferred && !cp && (
+          <button
+            type="button"
+            onClick={resume}
+            data-track="checkpoint-resume"
+            className="fade-in absolute inset-x-6 bottom-6 z-20 rounded-full bg-ink px-5 py-3 text-center text-[14.5px] font-semibold text-white shadow-lg"
+          >
+            Answer {deferred.ids.length === 1 ? '1 quick question' : `${deferred.ids.length} quick questions`} to continue
+          </button>
+        )}
         {toast && (
           <div role="status" className="fade-in pointer-events-none absolute inset-x-4 bottom-24 z-20 rounded-xl bg-ink px-4 py-3 text-center text-[14.5px] text-white shadow-lg">
             {toast}

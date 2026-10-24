@@ -40,10 +40,10 @@ export const STUDY = {
    */
   claims: {
     insurance:
-      'Insurance coverage is included on every rental. Full policy details are shared before your first trip.',
-    insuranceShort: 'Insurance coverage included on rentals',
-    monitoring: 'Cars are kept at a secured, staffed facility.',
-    monitoringShort: 'Secure, staffed airport parking',
+      'Insurance isn’t included automatically. Renters buy coverage from us when they book, or show proof of their own insurance before they drive.',
+    insuranceShort: 'Coverage options on every rental',
+    monitoring: 'Cars are kept at a secured facility.',
+    monitoringShort: 'Secure airport parking',
     shuttle: 'Getting to the terminal is covered. Details are confirmed when you book.',
     shuttleShort: 'Secured lot near the terminals',
     renterVetting: 'Every renter is ID-verified and has their driving record checked before they can book.',

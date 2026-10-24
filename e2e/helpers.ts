@@ -5,12 +5,14 @@ export type Persona = 'owner' | 'renter' | 'dual' | 'none';
 
 /** Screener answers that produce each persona under the prospectus rules. */
 function screener(persona: Persona): Record<string, string> {
+  const owner = persona === 'owner' || persona === 'dual';
   return {
-    'Are you 18': 'Yes',
+    'How old are you': '25–34',
     flown: 'Yes',
-    'personal vehicle': persona === 'owner' || persona === 'dual' ? 'Yes' : 'No',
+    'personal vehicle': owner ? 'Yes' : 'No',
     license: 'Yes',
-    'paid airport parking': persona === 'owner' || persona === 'dual' ? 'Yes, usually' : 'No, and I wouldn',
+    'airport’s own paid parking': owner ? 'Yes, usually' : 'No, and I wouldn',
+    'off-site parking lot near the airport': owner ? 'Sometimes' : 'No, and I wouldn',
     'renting a car near an airport': persona === 'renter' || persona === 'dual' ? 'Business travel' : 'None of these',
   };
 }
@@ -31,15 +33,17 @@ export async function answerSurvey(page: Page, persona: Persona) {
     if (key) {
       const role = key === 'renting a car near an airport' ? 'checkbox' : 'radio';
       await page.getByRole(role, { name: new RegExp(map[key].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) }).first().click();
-    } else if (await page.locator('textarea').count()) {
-      await page.locator('textarea').fill('Worried about damage and who is driving my car.');
     } else if (await page.locator('[role=listbox]').count()) {
       const picks = h.includes('three') ? 2 : 1;
       for (let i = 0; i < picks; i++) await page.locator('[role=listbox] button:not([disabled])').first().click();
     } else if (await page.locator('[role=checkbox]').count()) {
       await page.locator('[role=checkbox]').first().click();
-    } else {
+    } else if (await page.locator('[role=radio]').count()) {
+      // A grouped screen can show a choice plus an optional comments box below it.
       await page.locator('[role=radio]').nth(1).click();
+      if (await page.locator('textarea').count()) await page.locator('textarea').fill('Seems useful if the protections are real.');
+    } else {
+      await page.locator('textarea').fill('Worried about damage and who is driving my car.');
     }
     await page.getByRole('button', { name: 'Next', exact: true }).click();
     n++;
@@ -97,9 +101,8 @@ export async function ownerJourney(page: Page, first: boolean) {
   // A blocked link shows the toast and is logged, not followed.
   await f.getByText('Back to setup').first().click();
   await expect(page.getByText('That part isn’t included in this walkthrough.')).toBeVisible();
-  await f.locator('#pay').click();
-  await answerCheckpoints(page);
-  await f.getByText('Next: add your vehicle').click({ timeout: 10_000 });
+  // Payment confirms on its own; the price checkpoint fires, then the step auto-advances.
+  await answerCheckpoints(page, 1, 12_000);
   for (const [k, v] of [['year', '2019'], ['make', 'Honda'], ['model', 'Accord'], ['color', 'Silver'], ['plate', 'DX 4471']]) {
     await f.locator(`#i-${k}`).fill(v);
   }
@@ -108,9 +111,8 @@ export async function ownerJourney(page: Page, first: boolean) {
   const lot = await f.locator('.where b, .where strong').first().textContent().catch(() => null);
   if (lot) expect(lot).toMatch(/ lot$/);
   await f.locator('#rentSw').check();
-  await f.locator('#price').fill('52');
   await f.locator('#go').click();
-  await answerCheckpoints(page, 2);
+  await answerCheckpoints(page, 1);
   await expect(f.getByText('Your spot is reserved')).toBeVisible({ timeout: 10_000 });
   await answerCheckpoints(page, 2, 6000);
 }

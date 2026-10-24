@@ -282,10 +282,10 @@ main{padding:16px 16px 180px}
 </section>
 <section class="rent" id="rent" aria-labelledby="rentH">
 <div class="rh"><h2 id="rentH">Rent my car <em>while I'm away</em></h2><p>Verified travelers rent it while you're gone. You keep the earnings.</p><input type="checkbox" class="sw" id="rentSw" aria-labelledby="rentH"></div>
-<div class="rb off" id="rOff">Turn this on to set a daily price and see what your car could earn on this trip. Your parking is booked either way.</div>
+<div class="rb off" id="rOff">Turn this on to see what your car could earn on this trip. We set the daily price. Your parking is booked either way.</div>
 <div class="rb" id="rBlock" hidden><div class="blockm"><span class="li"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 018 0v3"></path></svg></span><div><b id="bWhy"></b><p id="bWhyL"></p><a id="bFix" href="#"></a></div></div></div>
 <div class="rb" id="rOn" hidden>
-<div class="prow"><div class="f" id="f-price"><label for="price">Daily price</label><div class="pin"><span>$</span><input id="price" type="number" inputmode="decimal" min="20" max="250" step="1" value="45"><em>/ day</em></div><p class="er"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.01"></path></svg><span></span></p></div><p class="sugg">Similar cars at {{AIRPORT_CODE}}: <b id="sug">$38–$52</b> · <button type="button" id="useSug">Use $45</button></p></div>
+<div class="prow"><p class="sugg">We set the price. Similar cars at {{AIRPORT_CODE}}: <b id="sug">$38–$52</b> · your car lists at <b id="ourP">$45/day</b></p></div>
 <p class="win"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg><span>Available to renters: <b id="rWin"></b></span></p>
 <div class="est">
 <div class="net"><span id="netL">Your trip after rental</span><b id="netV"></b><small id="netS"></small></div>
@@ -297,7 +297,7 @@ main{padding:16px 16px 180px}
 <p class="who-h">Who can rent your car</p>
 <ul class="who">
 <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-11"></path></svg><span><b>Verified members only.</b> {{CLAIM_RENTER_VETTING}}</span></li>
-<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-11"></path></svg><span><b>Pickup and return at our lot.</b> Attendants photograph your car each time it leaves and comes back.</span></li>
+<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-11"></path></svg><span><b>Pickup and return at our lot.</b> Your car is photographed each time it leaves and comes back.</span></li>
 <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-11"></path></svg><span>{{CLAIM_INSURANCE}}</span></li>
 <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-11"></path></svg><span><b>Back in its spot the day before you land.</b></span></li>
 </ul>
@@ -313,7 +313,7 @@ main{padding:16px 16px 180px}
 <div class="code"><b>PK-48217</b><button type="button" id="copy">Copy</button></div>
 <div class="cgrid"><div><span>Car</span><b id="cCar"></b></div><div><span>Parking</span><b id="cPark"></b></div><div><span>Drop-off</span><b id="cDrop"></b></div><div><span>Return</span><b id="cRet"></b></div><div style="grid-column:1/-1"><span>Rental</span><b id="cRent"></b></div></div>
 <div class="instr"><h3>Drop-off instructions</h3><p class="ad">{{LOT_NAME}} · {{LOT_ADDRESS}}</p>
-<ol><li><span>Follow signs to the <b>{{LOT_NAME}}</b> and show your code at the gate.</span></li><li><span>An attendant walks around the car with you and <b>takes condition photos</b>. About 5 minutes.</span></li><li><span>Leave your key with the attendant. {{CLAIM_SHUTTLE}}</span></li></ol></div>
+<ol><li><span>Follow signs to the <b>{{LOT_NAME}}</b> and show your code at the gate.</span></li><li><span>Walk around the car and <b>take condition photos</b> in the app. About 5 minutes.</span></li><li><span>Leave your key in the secure key drop. {{CLAIM_SHUTTLE}}</span></li></ol></div>
 <div class="cta"><a class="btn btn-accent" href="trip-detail.html?state=booked">View trip details</a><a class="btn btn-ghost" href="trips.html">All trips</a><a class="btn btn-ghost" href="#">Add to calendar</a></div>
 </section>
 </div>
@@ -323,7 +323,8 @@ main{padding:16px 16px 180px}
 <script>(function(){
 var $=function(id){return document.getElementById(id)};
 var CARS=window.__study.planCars();
-var RATE={{PARKING_RATE}},FEE={{FEE_PCT}}/100,S={car:'mine',rent:false,price:45,err:{}},busy=false;
+var RATE={{PARKING_RATE}},FEE={{FEE_PCT}}/100,S={car:'mine',rent:false,err:{}},busy=false;
+function ourPrice(){return (CARS[S.car]&&CARS[S.car].def)||45}
 var ER='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.01"></path></svg>';
 function money(n){return '$'+n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',')}
 function dt(d,t){if(!d)return null;var x=new Date(d+'T'+(t||'00:00'));return isNaN(x)?null:x}
@@ -333,7 +334,7 @@ function span(){var a=dt($('dd').value,$('dt').value),b=dt($('rd').value,$('rt')
 function cars(){
  $('cars').innerHTML=Object.keys(CARS).map(function(k){var c=CARS[k];
   return '<label class="car'+(S.car===k?' on':'')+'"><input type="radio" name="car" value="'+k+'"'+(S.car===k?' checked':'')+'><span class="cth"></span><span class="cb"><b>'+c.n+'</b><span>'+c.mm+'</span><span class="pl">'+c.pl+'</span></span><span class="ccap '+(c.ok?'y':'n')+'">'+(c.ok?'Can rent':'Parking only')+'</span></label>'}).join('');
- document.querySelectorAll('input[name=car]').forEach(function(r){r.onchange=function(){S.car=r.value;if(!CARS[r.value].ok)S.rent=false;else S.price=CARS[r.value].def;cars();$('price').value=S.price;calc()}});
+ document.querySelectorAll('input[name=car]').forEach(function(r){r.onchange=function(){S.car=r.value;if(!CARS[r.value].ok)S.rent=false;cars();calc()}});
 }
 function calc(){
  var c=CARS[S.car],sp=span(),days=sp?sp.days:0,park=RATE*days;
@@ -346,8 +347,8 @@ function calc(){
  $('rentSw').disabled=!c.ok||busy;$('rentSw').checked=!!(c.ok&&S.rent);
  $('rBlock').hidden=c.ok;$('rOff').hidden=!c.ok||S.rent;$('rOn').hidden=!(c.ok&&S.rent);
  if(!c.ok){$('bWhy').textContent=c.why;$('bWhyL').textContent=c.whyL;$('bFix').textContent=c.fix+' \u2192';$('bFix').href=c.href}
- if(c.ok){$('sug').textContent=c.sug}
- var avail=sp?Math.max(0,days-2):0,price=parseFloat($('price').value)||0,gross=price*avail,net=gross*(1-FEE);
+ if(c.ok){$('sug').textContent=c.sug;$('ourP').textContent='$'+ourPrice()+'/day'}
+ var avail=sp?Math.max(0,days-2):0,price=ourPrice(),gross=price*avail,net=gross*(1-FEE);
  if(sp&&avail){var s=new Date(sp.a);s.setDate(s.getDate()+1);var e=new Date(sp.b);e.setDate(e.getDate()-1);$('rWin').textContent=fD(s,{month:'short',day:'numeric'})+' \u2013 '+fD(e,{month:'short',day:'numeric'})+' \u00b7 '+avail+(avail===1?' day':' days')}
  else $('rWin').textContent=sp?'Trip too short to rent (3+ days needed)':'Pick your dates';
  $('eGross').textContent=money(price)+' \u00d7 '+avail+' days';$('eGrossA').textContent=money(gross);
@@ -370,8 +371,7 @@ function validate(){
  var e={},a=dt($('dd').value,$('dt').value),b=dt($('rd').value,$('rt').value),now=new Date();
  if(!$('dd').value)e.dd='Pick a drop-off date.';else if(a<now)e.dd='Drop-off can\u2019t be in the past.';else if(a-now<2*36e5)e.dd='Drop-off needs to be at least 2 hours from now.';
  if(!$('rd').value)e.rd='Pick a return date.';else if(a&&b<=a)e.rd='Return has to be after drop-off. Check the date and time.';else if(a&&(b-a)/864e5>30)e.rd='Stays are up to 30 days during the pilot.';
- if(CARS[S.car].ok&&S.rent){var p=parseFloat($('price').value);if(!(p>=20&&p<=250))e.price='Set a daily price between $20 and $250.'}
- ['dd','rd','price'].forEach(function(k){mark(k,e[k])});
+ ['dd','rd'].forEach(function(k){mark(k,e[k])});
  var n=Object.keys(e).length;$('sum').hidden=!n;
  if(n){$('sumT').textContent=(n===1?'One thing needs':n===2?'Two things need':'Three things need')+' a fix';}
  return !n;
@@ -379,21 +379,19 @@ function validate(){
 function lock(on){busy=on;document.querySelectorAll('#form input').forEach(function(i){i.disabled=on});$('go').disabled=on;$('go').innerHTML=on?'<span class="spin" aria-hidden="true"></span>Booking\u2026':'';if(!on)calc();else $('rentSw').disabled=true}
 function confirm(){
  var c=CARS[S.car],sp=span()||{a:new Date('2026-10-12T08:30'),b:new Date('2026-10-19T18:40'),days:8};
- var rent=c.ok&&S.rent,avail=Math.max(0,sp.days-2),net=(parseFloat($('price').value)||0)*avail*(1-FEE);
+ var rent=c.ok&&S.rent,avail=Math.max(0,sp.days-2),net=ourPrice()*avail*(1-FEE);
  $('cCar').textContent=c.n+' \u00b7 '+c.pl;
  $('cDrop').textContent=fD(sp.a)+', '+fT(sp.a);$('cRet').textContent=fD(sp.b)+', '+fT(sp.b);
  $('cPark').textContent=money(RATE*sp.days)+' USD hold';
- $('cRent').textContent=rent?'Listed at '+money(parseFloat($('price').value)||0)+'/day \u00b7 est. '+money(net):'Parking only';
+ $('cRent').textContent=rent?'Listed at '+money(ourPrice())+'/day \u00b7 est. '+money(net):'Parking only';
  $('cDropT').textContent=fD(sp.a,{weekday:'long',month:'short',day:'numeric'})+' at '+fT(sp.a);
- $('form').hidden=true;$('foot').hidden=true;$('done').hidden=false;window.scrollTo(0,0);window.__study.signal('confirmed',{rent:rent,price:parseFloat($('price').value)||0,days:sp.days,estEarnings:Math.round(net*100)/100});
+ $('form').hidden=true;$('foot').hidden=true;$('done').hidden=false;window.scrollTo(0,0);window.__study.signal('confirmed',{rent:rent,price:ourPrice(),days:sp.days,estEarnings:Math.round(net*100)/100});
 }
-$('go').onclick=function(){if(busy)return;if(!validate()){var f=document.querySelector('.f.bad input');if(f)f.focus();return}window.__study.pause('book',{rent:!!(CARS[S.car].ok&&S.rent),price:parseFloat($('price').value)||0}).then(function(){lock(true);setTimeout(function(){lock(false);confirm()},1400)})};
+$('go').onclick=function(){if(busy)return;if(!validate()){var f=document.querySelector('.f.bad input');if(f)f.focus();return}window.__study.pause('book',{rent:!!(CARS[S.car].ok&&S.rent),price:ourPrice()}).then(function(){lock(true);setTimeout(function(){lock(false);confirm()},1400)})};
 $('rentSw').onchange=function(){S.rent=this.checked;calc()};
 ['dd','dt','rd','rt'].forEach(function(k){$(k).oninput=function(){if(k==='dd'||k==='rd')mark(k,null);calc()}});
-$('price').oninput=function(){mark('price',null);calc()};
-$('useSug').onclick=function(){$('price').value=CARS[S.car].def;mark('price',null);calc()};
 $('copy').onclick=function(){try{navigator.clipboard.writeText('PK-48217')}catch(e){}this.textContent='Copied'};
-function reset(){busy=false;S={car:'mine',rent:false,price:45,err:{}};$('dd').value=window.__study.date(14);$('dt').value='08:30';$('rd').value=window.__study.date(21);$('rt').value='18:40';$('price').value=45;['dd','rd','price'].forEach(function(k){mark(k,null)});$('sum').hidden=true;$('form').hidden=false;$('foot').hidden=false;$('done').hidden=true;document.querySelectorAll('#form input').forEach(function(i){i.disabled=false});$('go').disabled=false}
+function reset(){busy=false;S={car:'mine',rent:false,err:{}};$('dd').value=window.__study.date(14);$('dt').value='08:30';$('rd').value=window.__study.date(21);$('rt').value='18:40';['dd','rd'].forEach(function(k){mark(k,null)});$('sum').hidden=true;$('form').hidden=false;$('foot').hidden=false;$('done').hidden=true;document.querySelectorAll('#form input').forEach(function(i){i.disabled=false});$('go').disabled=false}
 var P={
  default:function(){},
  rent:function(){S.rent=true},

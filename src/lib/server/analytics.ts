@@ -22,6 +22,9 @@ export function segmentOf(p: Participant): Segment {
   if (p.qualified_owner && p.qualified_renter) return 'dual';
   if (p.qualified_owner) return 'owner';
   if (p.qualified_renter) return 'renter';
+  // Matched neither persona but still ran a journey (defaulted by vehicle).
+  const first = p.journey_order?.[0];
+  if (first === 'owner' || first === 'renter') return first;
   return 'not_qualified';
 }
 
@@ -123,8 +126,9 @@ export async function overview() {
 
 const REASON_LABEL: Record<string, string> = {
   under_18: 'Under 18',
-  no_air_travel: 'No air travel in a 12-month window',
-  no_persona_match: 'Didn’t match owner or renter criteria',
+  no_air_travel: 'Doesn’t fly',
+  no_license: 'No valid driver’s license',
+  no_persona_match: 'Didn’t match owner or renter criteria', // legacy data only
 };
 
 /* ---------------- survey ---------------- */

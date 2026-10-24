@@ -39,6 +39,10 @@ export type Question = {
   added?: boolean;
   /** Only ask when this returns true */
   when?: (answers: Record<string, unknown>) => boolean;
+  /** Render on the same screen as the previous question (one step, two answers) */
+  withPrevious?: boolean;
+  /** Option values to hide, given the answers so far */
+  hideOptions?: (answers: Record<string, unknown>) => string[];
 };
 
 const yn: Option[] = [
@@ -50,8 +54,28 @@ const yn: Option[] = [
 /* Screener: decides Owner / Renter qualification (prospectus p.8)     */
 /* ------------------------------------------------------------------ */
 
+const parkingOptions: Option[] = [
+  { value: 'usually', label: 'Yes, usually' },
+  { value: 'sometimes', label: 'Sometimes' },
+  { value: 'would_consider', label: 'No, but I would under the right conditions' },
+  { value: 'no', label: 'No, and I wouldn’t consider it' },
+];
+
 export const SCREENER: Question[] = [
-  { id: 's_age', type: 'yesno', prompt: 'Are you 18 or older?', options: yn },
+  {
+    id: 's_age',
+    type: 'single',
+    prompt: 'How old are you?',
+    options: [
+      { value: 'under_18', label: '17 or under' },
+      { value: '18_24', label: '18–24' },
+      { value: '25_34', label: '25–34' },
+      { value: '35_44', label: '35–44' },
+      { value: '45_54', label: '45–54' },
+      { value: '55_64', label: '55–64' },
+      { value: '65_plus', label: '65 or older' },
+    ],
+  },
   {
     id: 's_flown',
     type: 'yesno',
@@ -65,17 +89,24 @@ export const SCREENER: Question[] = [
     help: 'Owned, financed, leased, or otherwise yours to use.',
     options: yn,
   },
-  { id: 's_license', type: 'yesno', prompt: 'Do you have a valid driver’s license?', options: yn },
   {
-    id: 's_paid_parking',
+    id: 's_license',
+    type: 'yesno',
+    prompt: 'Do you have a valid driver’s license?',
+    help: 'A current, unexpired driver’s license issued by a government agency. Learner’s permits don’t count.',
+    options: yn,
+  },
+  {
+    id: 's_parking_onsite',
     type: 'single',
-    prompt: 'When you fly, do you use paid airport parking or an off-site parking lot?',
-    options: [
-      { value: 'usually', label: 'Yes, usually' },
-      { value: 'sometimes', label: 'Sometimes' },
-      { value: 'would_consider', label: 'No, but I would under the right conditions' },
-      { value: 'no', label: 'No, and I wouldn’t consider it' },
-    ],
+    prompt: 'When you fly, do you use the airport’s own paid parking (the garages or lots run by the airport)?',
+    options: parkingOptions,
+  },
+  {
+    id: 's_parking_offsite',
+    type: 'single',
+    prompt: 'When you fly, do you use a paid off-site parking lot near the airport?',
+    options: parkingOptions,
   },
   {
     id: 's_rent_scenarios',
@@ -102,13 +133,13 @@ export const SURVEY: Question[] = [
     id: 'q1_flights',
     type: 'single',
     prompt: 'How many round-trip flights do you take in a typical year?',
-    options: ['0', '1–2', '3–5', '6–10', '11+'].map((v) => ({ value: v, label: v })),
+    options: ['1–2', '3–5', '6–10', '11+'].map((v) => ({ value: v, label: v })),
   },
   {
     id: 'q2_home_airport',
     type: 'airport',
     prompt: 'What airport do you fly out of most often?',
-    placeholder: 'Search by city or code',
+    placeholder: 'Search by city, code, or airport name',
   },
   {
     id: 'q3_dest_airports',
@@ -116,7 +147,7 @@ export const SURVEY: Question[] = [
     prompt: 'Which three airports do you fly to most often?',
     help: 'Select up to 3.',
     max: 3,
-    placeholder: 'Search by city or code',
+    placeholder: 'Search by city, code, or airport name',
   },
   {
     id: 'q_trip_length',
@@ -147,6 +178,10 @@ export const SURVEY: Question[] = [
     type: 'single',
     prompt: 'When you fly, how do you usually get to the airport?',
     other: true,
+    hideOptions: (a) => [
+      ...(a.s_parking_onsite === 'no' ? ['park_airport'] : []),
+      ...(a.s_parking_offsite === 'no' ? ['offsite_lot'] : []),
+    ],
     options: [
       { value: 'park_airport', label: 'Drive and park at the airport' },
       { value: 'offsite_lot', label: 'Drive and park at an off-site lot' },
@@ -155,23 +190,6 @@ export const SURVEY: Question[] = [
       { value: 'transit', label: 'Public transit' },
       { value: 'other', label: 'Other' },
     ],
-  },
-  {
-    id: 'q5_rideshare',
-    type: 'single',
-    prompt: 'If you use rideshare to or from the airport, which do you use most?',
-    options: [
-      { value: 'uber', label: 'Uber' },
-      { value: 'lyft', label: 'Lyft' },
-      { value: 'both', label: 'Both' },
-      { value: 'neither', label: 'Neither' },
-    ],
-  },
-  {
-    id: 'q6_park_at_airport',
-    type: 'yesno',
-    prompt: 'Do you typically leave your vehicle parked at the airport while traveling?',
-    options: yn,
   },
   {
     id: 'q7_idle_vehicle',
@@ -198,14 +216,18 @@ export const SURVEY: Question[] = [
     id: 'q8_wtp',
     type: 'single',
     prompt:
-      'Imagine a membership that gives you secure parking near the airport. It also has an optional feature: while you’re away, your parked car can be rented to verified travelers, with protections like monitoring and insurance. What is the most you would pay per year for this membership?',
-    options: ['$0', '$25', '$55', '$75', '$99', '$125+'].map((v) => ({ value: v, label: v })),
+      'Imagine a membership that gives you secure parking near the airport. It also has an optional feature: while you’re away, your parked car can be rented to verified travelers, with protections like monitoring and insurance options. What is the most you would pay per year for this membership?',
+    options: ['$0–$10', '$10–$20', '$20–$30', '$30–$40', '$40–$50', '$50–$60', '$60–$70', '$70–$80', '$80–$90', '$90–$100', '$100–$125', '$125+'].map(
+      (v) => ({ value: v, label: v }),
+    ),
   },
   {
     id: 'q9_concern',
     type: 'text',
-    prompt: 'What is your biggest concern or deal-breaker about an option like the one just described?',
-    placeholder: 'Type your answer',
+    prompt: 'What, if any, comments do you have about the option just described?',
+    optional: true,
+    withPrevious: true,
+    placeholder: 'Optional',
   },
 ];
 
@@ -230,7 +252,7 @@ const scale5 = (id: string, prompt: string, minLabel: string, maxLabel: string):
   maxLabel,
 });
 
-const why = (id: string, prompt: string): Question => ({
+const why = (id: string, prompt = 'Why did you rate it that way?'): Question => ({
   id,
   type: 'text',
   prompt,
@@ -243,87 +265,55 @@ export const CHECKPOINTS: Record<string, Checkpoint> = {
     id: 'cp1',
     label: 'Concept clarity',
     main: scale5('cp1', 'How clear is what this app does?', 'Not clear', 'Very clear'),
-    followup: why('cp1_why', 'What’s unclear?'),
+    followup: why('cp1_why'),
   },
   cp2: {
     id: 'cp2',
     label: 'Sign-up ease',
     main: scale5('cp2', 'How easy was sign-up?', 'Very hard', 'Very easy'),
-    followup: why('cp2_why', 'What slowed you down?'),
+    followup: why('cp2_why'),
   },
   cp3: {
     id: 'cp3',
     label: 'ID verification comfort',
     main: scale5('cp3', 'How comfortable are you with this step?', 'Not comfortable', 'Very comfortable'),
-    followup: why('cp3_why', 'What would increase trust?'),
+    followup: why('cp3_why'),
   },
   cp4: {
     id: 'cp4',
     label: 'Security confidence',
     main: scale5('cp4', 'How confident are you in the security of the parking location?', 'Not confident', 'Very confident'),
-    followup: why('cp4_why', 'What proof would you need?'),
+    followup: why('cp4_why'),
   },
   cp5: {
     id: 'cp5',
     label: 'Insurance confidence',
     main: scale5('cp5', 'How confident are you that you’d be protected if something went wrong?', 'Not confident', 'Very confident'),
-    followup: why('cp5_why', 'What details matter most?'),
-  },
-  cp6: {
-    id: 'cp6',
-    label: 'Rental opt-in (owner)',
-    main: {
-      id: 'cp6',
-      type: 'single',
-      prompt: 'Would you enable the rental option while you’re away?',
-      options: [
-        { value: 'yes', label: 'Yes' },
-        { value: 'maybe', label: 'Maybe' },
-        { value: 'no', label: 'No' },
-      ],
-    },
-    followup: {
-      id: 'cp6_conditions',
-      type: 'multi',
-      prompt: 'What conditions must be true?',
-      help: 'Select all that apply.',
-      other: true,
-      options: [
-        { value: 'approve_each', label: 'I approve each renter myself' },
-        { value: 'vetting', label: 'Renters are ID-verified and driving-record checked' },
-        { value: 'insurance', label: 'My car is fully covered by insurance' },
-        { value: 'back_before', label: 'My car is back before I land' },
-        { value: 'condition_photos', label: 'Condition photos at every pickup and return' },
-        { value: 'mileage', label: 'A mileage limit' },
-        { value: 'my_price', label: 'I set my own price' },
-        { value: 'reviews', label: 'I can see renter ratings and reviews' },
-        { value: 'other', label: 'Other' },
-      ],
-    },
+    followup: why('cp5_why'),
   },
   h2: {
     id: 'h2',
-    label: 'Earnings expectations (owner)',
+    label: 'Revenue share expectations (owner)',
     main: {
-      id: 'h2_expect',
-      type: 'currency',
+      id: 'h2_pct',
+      type: 'single',
       added: true,
-      prompt: 'How much would you expect to earn from renting your car on a typical trip?',
-      placeholder: '0',
-    },
-    followup: {
-      id: 'h2_need',
-      type: 'currency',
-      added: true,
-      prompt: 'How much would you need to earn on a trip for renting to be worth it?',
-      placeholder: '0',
+      prompt: 'What percent of the rental revenue would you expect to receive?',
+      help: 'Your share of what a renter pays, after any service fee.',
+      options: [
+        { value: '90_100', label: '90–100%' },
+        { value: '75_89', label: '75–89%' },
+        { value: '60_74', label: '60–74%' },
+        { value: '50_59', label: '50–59%' },
+        { value: 'lt_50', label: 'Less than 50%' },
+      ],
     },
   },
   cp7: {
     id: 'cp7',
     label: 'Availability confidence (renter)',
     main: scale5('cp7', 'How confident are you this vehicle would be available as described?', 'Not confident', 'Very confident'),
-    followup: why('cp7_why', 'What would increase confidence?'),
+    followup: why('cp7_why'),
   },
   cp8: {
     id: 'cp8',
@@ -352,7 +342,7 @@ export const CHECKPOINTS: Record<string, Checkpoint> = {
       minLabel: 'Not at all likely',
       maxLabel: 'Extremely likely',
     },
-    followup: why('cp9_why', 'What’s the one thing holding you back?'),
+    followup: why('cp9_why'),
   },
   cp10: {
     id: 'cp10',

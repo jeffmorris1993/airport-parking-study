@@ -112,10 +112,8 @@ const FOLLOW: Record<string, string[]> = {
   cp7_why: ['Real photos of this exact car.', 'Reviews from other renters.', 'A guarantee if the owner cancels.', 'Seeing the owner rating.'],
   cp8_why: ['A free first year.', 'If it included the parking.', 'Show me how much I would save vs airport parking.', 'If I made money back on the first trip.', 'Lower the fee.', 'It is fine.'],
   cp9_why: ['Trust in a new company.', 'Insurance details.', 'Letting strangers drive my car.', 'Nothing, I would do it.', 'The price.', 'Getting to the terminal on time.', 'Need to see reviews first.'],
-  cp10: ['When it asked for my ID and a selfie.', 'Turning on the rental option. I was not sure about insurance.', 'The membership price before I knew what I was getting.', 'Seeing the 25% fee on my earnings.', 'Not knowing how far the lot is from the terminal.', 'Deciding on a daily price. I had no idea what to charge.', 'None really, it was smooth.', 'Whether the car would actually be there when I land.', 'The house rules and late fees.', 'Wondering who the owner is and if they would cancel.'],
+  cp10: ['When it asked for my ID and a selfie.', 'Turning on the rental option. I was not sure about insurance.', 'The membership price before I knew what I was getting.', 'Seeing the 25% fee on my earnings.', 'Not knowing how far the lot is from the terminal.', 'Not being able to set my own price for my car.', 'None really, it was smooth.', 'Whether the car would actually be there when I land.', 'The house rules and late fees.', 'Wondering who the owner is and if they would cancel.'],
 };
-const CONDITIONS = ['approve_each', 'vetting', 'insurance', 'back_before', 'condition_photos', 'mileage', 'my_price', 'reviews'] as const;
-
 /* ---------------- timing per step (median active seconds) ---------------- */
 
 const MEDIAN_S: Record<string, number> = {
@@ -130,7 +128,7 @@ const BLOCKED_LINKS = ['Back to setup', '← Home', 'My vehicles', 'Trips', 'Pri
 
 /* ---------------- generator ---------------- */
 
-type Segment = 'owner' | 'renter' | 'dual' | 'none_air' | 'none_match' | 'minor';
+type Segment = 'owner' | 'renter' | 'dual' | 'none_air' | 'no_license' | 'defaulted' | 'minor';
 
 export async function generateDemo(count = 100, seed = Date.now()) {
   const r = new R(mulberry32(seed));
@@ -138,7 +136,7 @@ export async function generateDemo(count = 100, seed = Date.now()) {
   const now = Date.now();
 
   const segs: Segment[] = [];
-  const plan: [Segment, number][] = [['owner', 0.31], ['renter', 0.27], ['dual', 0.25], ['none_air', 0.06], ['none_match', 0.08], ['minor', 0.03]];
+  const plan: [Segment, number][] = [['owner', 0.3], ['renter', 0.26], ['dual', 0.24], ['none_air', 0.05], ['no_license', 0.03], ['defaulted', 0.09], ['minor', 0.03]];
   for (const [s, share] of plan) for (let i = 0; i < Math.round(count * share); i++) segs.push(s);
   while (segs.length < count) segs.push('owner');
   segs.length = count;
@@ -211,53 +209,57 @@ function makeParticipant(r: R, seg: Segment, now: number) {
     t += r.logn(s * 1000, 0.6);
     answer(phase, id, v, '', id, Math.round(r.logn(s * 1000, 0.6)));
   };
-  q('s_age', seg === 'minor' ? 'no' : 'yes', 'screener', 2);
-  if (seg === 'minor') {
+  const screenOut = (reason: string) => {
     participant.status = 'screened_out';
-    participant.screen_out_reason = 'under_18';
+    participant.screen_out_reason = reason;
     participant.qualified_owner = false;
     participant.qualified_renter = false;
     participant.last_step = 'not_eligible';
     participant.updated_at = ts();
     return { participant, responses, events, contact: null };
-  }
+  };
+  q('s_age', seg === 'minor' ? 'under_18' : r.weighted([['18_24', 12], ['25_34', 26], ['35_44', 24], ['45_54', 18], ['55_64', 12], ['65_plus', 8]] as const), 'screener', 3);
+  if (seg === 'minor') return screenOut('under_18');
   q('s_flown', seg === 'none_air' ? 'no' : 'yes');
-  q('s_vehicle', isOwner || (seg !== 'renter' && r.chance(0.5)) ? 'yes' : 'no');
-  q('s_license', isRenter || r.chance(0.8) ? 'yes' : 'no');
-  q('s_paid_parking', isOwner ? r.weighted([['usually', 40], ['sometimes', 35], ['would_consider', 25]] as const) : 'no');
+  if (seg === 'none_air') return screenOut('no_air_travel');
+  const vehicle = isOwner || (seg !== 'renter' && r.chance(0.5));
+  q('s_vehicle', vehicle ? 'yes' : 'no');
+  q('s_license', seg === 'no_license' ? 'no' : 'yes');
+  if (seg === 'no_license') return screenOut('no_license');
+  q('s_parking_onsite', isOwner ? r.weighted([['usually', 40], ['sometimes', 35], ['would_consider', 25]] as const) : 'no');
+  q('s_parking_offsite', isOwner ? r.weighted([['usually', 15], ['sometimes', 30], ['would_consider', 30], ['no', 25]] as const) : 'no');
   q('s_rent_scenarios', isRenter ? r.some(['business', 'family', 'multistop', 'no_rideshare'], 1, 3) : ['none'], 'screener', 6);
 
   /* ----- survey ----- */
-  const flights = isOwner ? r.weighted([['1–2', 18], ['3–5', 38], ['6–10', 27], ['11+', 17]] as const) : r.weighted([['0', 4], ['1–2', 30], ['3–5', 36], ['6–10', 20], ['11+', 10]] as const);
-  q('q1_flights', seg === 'none_air' ? '0' : flights, 'survey');
+  const flights = isOwner ? r.weighted([['1–2', 18], ['3–5', 38], ['6–10', 27], ['11+', 17]] as const) : r.weighted([['1–2', 33], ['3–5', 37], ['6–10', 20], ['11+', 10]] as const);
+  q('q1_flights', flights, 'survey');
   const home = r.weighted(HOME);
   q('q2_home_airport', home, 'survey', 7);
   const dests = r.some(DEST, 1, 3);
   q('q3_dest_airports', dests, 'survey', 10);
   q('q_trip_length', r.weighted([['1-2', 22], ['3-5', 42], ['6-9', 26], ['10+', 10]] as const), 'survey');
   q('q_distance', r.weighted([['<15', 14], ['15-30', 38], ['30-60', 34], ['60+', 14]] as const), 'survey');
-  q('q4_ground', isOwner ? r.weighted([['park_airport', 45], ['offsite_lot', 30], ['rideshare', 12], ['friend_family', 13]] as const) : r.weighted([['rideshare', 45], ['friend_family', 25], ['transit', 15], ['park_airport', 8], ['other:Shuttle bus', 7]] as const), 'survey');
-  q('q5_rideshare', r.weighted([['uber', 45], ['lyft', 12], ['both', 30], ['neither', 13]] as const), 'survey');
-  q('q6_park_at_airport', isOwner ? (r.chance(0.7) ? 'yes' : 'no') : r.chance(0.15) ? 'yes' : 'no', 'survey');
+  // Non-owners answered "no" to both parking questions, so the park options are hidden for them.
+  q('q4_ground', isOwner ? r.weighted([['park_airport', 45], ['offsite_lot', 30], ['rideshare', 12], ['friend_family', 13]] as const) : r.weighted([['rideshare', 48], ['friend_family', 25], ['transit', 15], ['other:Shuttle bus', 12]] as const), 'survey');
   q('q7_idle_vehicle', isOwner ? (r.chance(0.35) ? 'yes' : 'no') : r.chance(0.3) ? 'yes' : 'no', 'survey');
   const sharing = r.chance(0.18) ? ['none'] : r.some(['p2p_rent', 'airbnb_guest', 'airbnb_guest', 'airbnb_host', 'p2p_list'], 1, 3).filter((v, i, a) => a.indexOf(v) === i);
   q('q_sharing', sharing, 'survey');
-  q('q8_wtp', isOwner ? r.weighted([['$0', 6], ['$25', 18], ['$55', 36], ['$75', 18], ['$99', 15], ['$125+', 7]] as const) : r.weighted([['$0', 22], ['$25', 34], ['$55', 26], ['$75', 10], ['$99', 6], ['$125+', 2]] as const), 'survey');
-  q('q9_concern', r.pick(CONCERNS), 'survey', 25);
+  q(
+    'q8_wtp',
+    isOwner
+      ? r.weighted([['$0–$10', 5], ['$10–$20', 8], ['$20–$30', 10], ['$30–$40', 12], ['$40–$50', 16], ['$50–$60', 14], ['$60–$70', 10], ['$70–$80', 8], ['$80–$90', 5], ['$90–$100', 4], ['$100–$125', 5], ['$125+', 3]] as const)
+      : r.weighted([['$0–$10', 18], ['$10–$20', 20], ['$20–$30', 17], ['$30–$40', 13], ['$40–$50', 11], ['$50–$60', 8], ['$60–$70', 5], ['$70–$80', 3], ['$80–$90', 2], ['$90–$100', 1], ['$100–$125', 1], ['$125+', 1]] as const),
+    'survey',
+  );
+  if (r.chance(0.75)) q('q9_concern', r.pick(CONCERNS), 'survey', 25); // optional comments question
 
-  ev('qualified', { meta: { owner: isOwner, renter: isRenter } });
+  const defaultedTo: Persona | null = seg === 'defaulted' ? (vehicle ? 'owner' : 'renter') : null;
+  ev('qualified', { meta: { owner: isOwner, renter: isRenter, defaulted: defaultedTo } });
   participant.qualified_owner = isOwner;
   participant.qualified_renter = isRenter;
-  if (!isOwner && !isRenter) {
-    participant.status = 'screened_out';
-    participant.screen_out_reason = seg === 'none_air' ? 'no_air_travel' : 'no_persona_match';
-    participant.last_step = 'not_eligible';
-    participant.journey_order = [];
-    participant.updated_at = ts();
-    return { participant, responses, events, contact: null };
-  }
 
-  const order: Persona[] = seg === 'dual' ? (r.chance(0.5) ? ['owner', 'renter'] : ['renter', 'owner']) : [isOwner ? 'owner' : 'renter'];
+  const order: Persona[] =
+    seg === 'dual' ? (r.chance(0.5) ? ['owner', 'renter'] : ['renter', 'owner']) : defaultedTo ? [defaultedTo] : [isOwner ? 'owner' : 'renter'];
   participant.journey_order = order;
   participant.status = 'in_journey';
 
@@ -281,21 +283,14 @@ function makeParticipant(r: R, seg: Segment, now: number) {
     const base: Record<string, number> = { cp1: 4.0, cp2: 4.2, cp3: 3.2, cp4: 3.3, cp5: persona === 'owner' ? 2.9 : 3.5, cp7: 3.6 };
     let main: unknown;
     if (cpId in base) main = r.scale(base[cpId] + warmth, 1, 5, 0.9);
-    else if (cpId === 'cp6') main = rentOn ? r.weighted([['yes', 60], ['maybe', 40]] as const) : r.weighted([['maybe', 45], ['no', 45], ['yes', 10]] as const);
-    else if (cpId === 'h2') main = Math.round(r.logn(140, 0.5) / 5) * 5;
+    else if (cpId === 'h2') main = r.weighted([['90_100', 18], ['75_89', 34], ['60_74', 26], ['50_59', 14], ['lt_50', 8]] as const);
     else if (cpId === 'cp8') main = r.weighted([['too_low', 10], ['about_right', Math.max(5, 52 + warmth * 15)], ['too_high', Math.max(5, 38 - warmth * 15)]] as const);
     else if (cpId === 'cp9') main = r.scale((persona === 'owner' ? (rentOn ? 7 : 5.4) : 6.7) + warmth * 1.4, 0, 10, 1.8);
     else if (cpId === 'cp10') main = r.pick(FOLLOW.cp10);
     answer('checkpoint', cp.main.id, main, journey, stepId, ms);
     ev('checkpoint_answered', { journey: persona, step_id: stepId, meta: { checkpoint: cpId, ms, changes: 0 } });
-    if (cp.followup) {
-      if (cp.followup.id === 'cp6_conditions') {
-        if (main !== 'no' || r.chance(0.5)) answer('checkpoint', 'cp6_conditions', [...r.some<string>(CONDITIONS, 2, 4), ...(r.chance(0.08) ? ['other:Only renters over 30'] : [])], journey, stepId);
-      } else if (cp.followup.id === 'h2_need') {
-        answer('checkpoint', 'h2_need', Math.round(((main as number) * r.f() * 0.8 + (main as number) * 0.9) / 5) * 5, journey, stepId);
-      } else if (FOLLOW[cp.followup.id] && r.chance(typeof main === 'number' && main <= 3 ? 0.75 : 0.4)) {
-        answer('checkpoint', cp.followup.id, r.pick(FOLLOW[cp.followup.id]), journey, stepId);
-      }
+    if (cp.followup && FOLLOW[cp.followup.id] && r.chance(typeof main === 'number' && main <= 3 ? 0.75 : 0.4)) {
+      answer('checkpoint', cp.followup.id, r.pick(FOLLOW[cp.followup.id]), journey, stepId);
     }
     t += r.int(400, 1500);
   };
@@ -415,13 +410,12 @@ function makeParticipant(r: R, seg: Segment, now: number) {
         }
         break;
       case 'membership': {
-        const pay = byId('#pay')!;
         if (willDrop) {
           if (r.chance(0.5)) click(byId('#backLink')!);
           break;
         }
-        click(pay);
-        rageOn(pay, 0.05);
+        // Payment runs itself: unpaid → pending → active while the participant watches.
+        t += 2200 + 2600;
         break;
       }
       case 'add-vehicle':
@@ -441,11 +435,6 @@ function makeParticipant(r: R, seg: Segment, now: number) {
             click(byId('#rentSw')!);
             ev('change', { ...ctx, element_id: '#rentSw', label: 'rentSw', meta: { field_type: 'checkbox', value: false } });
             rentOn = false;
-          } else if (r.chance(0.55)) {
-            field('#price', 6000, 'number');
-          } else {
-            const s = byId('#useSug');
-            if (s) click(s);
           }
         }
         if (!willDrop) {
@@ -491,7 +480,7 @@ function makeParticipant(r: R, seg: Segment, now: number) {
     for (const [name, ids] of Object.entries(pauses)) {
       const before = t;
       if (screen === 'membership' && name === 'pay') behavior('owner.membership:pay', { price: STUDY.pricing.membershipFounding }, persona, step.id);
-      if (screen === 'plan-trip' && name === 'book') behavior('owner.trip:book', { rent: rentOn, price: rentOn ? r.int(30, 70) : 45 }, persona, step.id);
+      if (screen === 'plan-trip' && name === 'book') behavior('owner.trip:book', { rent: rentOn, price: 45 }, persona, step.id);
       if (screen === 'car-detail' && name === 'request') {
         const car = BROWSE_CARS[r.weighted(BROWSE_CARS.map((_, i) => [i, [26, 22, 24, 12, 6, 10][i]] as const))];
         behavior('renter.car:request', { car: `${car.y} ${car.mm}`, rate: car.p }, persona, step.id);
@@ -501,14 +490,10 @@ function makeParticipant(r: R, seg: Segment, now: number) {
       for (const id of ids) runCheckpoint(id, persona, step.id);
       cpMs += t - before;
     }
-    if (screen === 'membership') {
-      t += 2600;
-      const pay = byId('#pay')!;
-      click({ ...pay, label: 'Next: add your vehicle →', id: null });
-    }
+    if (screen === 'membership') t += 1400; // beat between cp8 and the auto-advance
     if (screen === 'add-vehicle') behavior('owner.vehicle:vehicle', { year: cy, make: cmake, model: cmodel, color: r.pick(COLORS) }, persona, step.id);
     if (screen === 'plan-trip') {
-      const price = rentOn ? r.int(30, 70) : 45;
+      const price = 45;
       const days = r.int(3, 10);
       behavior('owner.trip:confirmed', { rent: rentOn, price, days, estEarnings: rentOn ? Math.round(price * Math.max(0, days - 2) * 0.75 * 100) / 100 : 0 }, persona, step.id);
     }
