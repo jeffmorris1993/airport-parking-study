@@ -263,12 +263,12 @@ export function ScreenStep(props: ScreenStepProps) {
   const cp = queue[0] ? CHECKPOINTS[queue[0]] : null;
 
   return (
-    <div className="flex h-[100dvh] flex-col items-center md:justify-center md:gap-4 md:py-4">
+    <div className="flex h-[100dvh] flex-col items-center">
       {/* Task instruction */}
-      <div className="w-full shrink-0 border-b border-line bg-surface md:max-w-[430px] md:rounded-2xl md:border md:shadow-card">
+      <div className="w-full shrink-0 border-b border-line bg-surface">
         <button
           type="button"
-          className="flex w-full items-start gap-3 px-4 py-3 text-left"
+          className="mx-auto flex w-full max-w-[760px] items-start gap-3 px-4 py-3 text-left"
           aria-expanded={taskOpen}
           onClick={() => setTaskOpen((o) => !o)}
           data-track="task-toggle"
@@ -288,8 +288,8 @@ export function ScreenStep(props: ScreenStepProps) {
         </button>
       </div>
 
-      {/* The prototype, in a phone-sized frame on larger screens */}
-      <div className="relative w-full flex-1 overflow-hidden bg-bg md:h-[min(844px,calc(100dvh-140px))] md:w-[390px] md:flex-none md:rounded-[34px] md:border-[10px] md:border-[#0a1a36] md:shadow-[0_24px_60px_rgba(10,26,54,.28)]">
+      {/* The prototype fills the viewport, so its own breakpoints pick the phone, tablet or desktop layout */}
+      <div className="relative w-full flex-1 overflow-hidden bg-bg">
         {srcdoc && (
           <iframe
             key={step.id}

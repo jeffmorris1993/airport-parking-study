@@ -8,8 +8,8 @@ export async function GET(req: Request) {
   if (!(await adminEmail())) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const u = new URL(req.url);
   const screen = (u.searchParams.get('screen') || '').replace(/[^a-z0-9-]/g, '');
-  const d = u.searchParams.get('device');
-  const device = d === 'mobile' || d === 'desktop' ? d : 'all';
+  const l = u.searchParams.get('layout');
+  const layout = l === 'desktop' ? 'desktop' : 'phone';
   if (!screen) return NextResponse.json({ error: 'screen required' }, { status: 400 });
-  return NextResponse.json(await heatmapData(screen, device));
+  return NextResponse.json(await heatmapData(screen, layout));
 }

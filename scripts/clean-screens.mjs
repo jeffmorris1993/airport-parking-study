@@ -138,8 +138,16 @@ const PATCHES = {
       'Turn this on to see what your car could earn on this trip. We set the daily price. Your parking is booked either way.',
     ],
     [
+      // The .prow wrapper is dropped with the input it used to pair the price hint with: it is
+      // a two-column grid that would otherwise squeeze the hint into a 200px column.
       /<div class="prow"><div class="f" id="f-price">[\s\S]*?<button type="button" id="useSug">Use \$45<\/button><\/p><\/div>/,
-      '<div class="prow"><p class="sugg">We set the price. Similar cars at SFO: <b id="sug">$38–$52</b> · your car lists at <b id="ourP">$45/day</b></p></div>',
+      '<p class="sugg">We set the price. Similar cars at {{AIRPORT_CODE}}: <b id="sug">$38–$52</b> · your car lists at <b id="ourP">$45/day</b></p>',
+    ],
+    // Switching renting on asks the revenue-share checkpoint first; calc() is what reveals
+    // #rOn, so deferring it keeps the earnings split hidden until the question is answered.
+    [
+      "$('rentSw').onchange=function(){S.rent=this.checked;calc()};",
+      "$('rentSw').onchange=function(){if(!this.checked){S.rent=false;calc();return}window.__study.pause('rent_on').then(function(){S.rent=true;calc()})};",
     ],
     ["var RATE={{PARKING_RATE}},FEE={{FEE_PCT}}/100,S={car:'mine',rent:false,price:45,err:{}},busy=false;", "var RATE={{PARKING_RATE}},FEE={{FEE_PCT}}/100,S={car:'mine',rent:false,err:{}},busy=false;\nfunction ourPrice(){return (CARS[S.car]&&CARS[S.car].def)||45}"],
     [

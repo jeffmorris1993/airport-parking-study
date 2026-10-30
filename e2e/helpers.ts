@@ -110,11 +110,13 @@ export async function ownerJourney(page: Page, first: boolean) {
   await expect(f.getByText('2019 Honda Accord')).toBeVisible();
   const lot = await f.locator('.where b, .where strong').first().textContent().catch(() => null);
   if (lot) expect(lot).toMatch(/ lot$/);
+  // Switching renting on asks the revenue-share question before the earnings split is revealed,
+  // so the Book pause that follows has nothing left to ask.
   await f.locator('#rentSw').check();
-  await f.locator('#go').click();
   await answerCheckpoints(page, 1);
+  await f.locator('#go').click();
   await expect(f.getByText('Your spot is reserved')).toBeVisible({ timeout: 10_000 });
-  await answerCheckpoints(page, 2, 6000);
+  await answerCheckpoints(page, 1, 6000);
 }
 
 export async function renterJourney(page: Page, first: boolean) {
@@ -122,8 +124,9 @@ export async function renterJourney(page: Page, first: boolean) {
   if (first) await sharedSteps(page);
   await f.locator('a.cc').nth(2).click();
   await expect(f.getByText('2020 Honda Civic').first()).toBeVisible();
-  // The prototype is always phone-width (full screen on mobile, a phone frame on desktop), so the sticky bar button is the one shown.
-  await f.locator('#mbB').click();
+  // The prototype is responsive: narrow viewports get the sticky bar (#mbB), wide ones the
+  // sidebar button (#req). Both call the same send(), so click whichever this width shows.
+  await f.locator('#mbB:visible, #req:visible').first().click();
   await answerCheckpoints(page);
   await f.locator('#continue').click();
   await answerCheckpoints(page);
@@ -131,7 +134,7 @@ export async function renterJourney(page: Page, first: boolean) {
   await f.locator('#go').click();
   await answerCheckpoints(page);
   await expect(f.locator('#done h2')).toHaveText('Request sent', { timeout: 10_000 });
-  await answerCheckpoints(page, 2, 6000);
+  await answerCheckpoints(page, 1, 6000);
 }
 
 export async function finish(page: Page) {

@@ -112,7 +112,6 @@ const FOLLOW: Record<string, string[]> = {
   cp7_why: ['Real photos of this exact car.', 'Reviews from other renters.', 'A guarantee if the owner cancels.', 'Seeing the owner rating.'],
   cp8_why: ['A free first year.', 'If it included the parking.', 'Show me how much I would save vs airport parking.', 'If I made money back on the first trip.', 'Lower the fee.', 'It is fine.'],
   cp9_why: ['Trust in a new company.', 'Insurance details.', 'Letting strangers drive my car.', 'Nothing, I would do it.', 'The price.', 'Getting to the terminal on time.', 'Need to see reviews first.'],
-  cp10: ['When it asked for my ID and a selfie.', 'Turning on the rental option. I was not sure about insurance.', 'The membership price before I knew what I was getting.', 'Seeing the 25% fee on my earnings.', 'Not knowing how far the lot is from the terminal.', 'Not being able to set my own price for my car.', 'None really, it was smooth.', 'Whether the car would actually be there when I land.', 'The house rules and late fees.', 'Wondering who the owner is and if they would cancel.'],
 };
 /* ---------------- timing per step (median active seconds) ---------------- */
 
@@ -286,7 +285,6 @@ function makeParticipant(r: R, seg: Segment, now: number) {
     else if (cpId === 'h2') main = r.weighted([['90_100', 18], ['75_89', 34], ['60_74', 26], ['50_59', 14], ['lt_50', 8]] as const);
     else if (cpId === 'cp8') main = r.weighted([['too_low', 10], ['about_right', Math.max(5, 52 + warmth * 15)], ['too_high', Math.max(5, 38 - warmth * 15)]] as const);
     else if (cpId === 'cp9') main = r.scale((persona === 'owner' ? (rentOn ? 7 : 5.4) : 6.7) + warmth * 1.4, 0, 10, 1.8);
-    else if (cpId === 'cp10') main = r.pick(FOLLOW.cp10);
     answer('checkpoint', cp.main.id, main, journey, stepId, ms);
     ev('checkpoint_answered', { journey: persona, step_id: stepId, meta: { checkpoint: cpId, ms, changes: 0 } });
     if (cp.followup && FOLLOW[cp.followup.id] && r.chance(typeof main === 'number' && main <= 3 ? 0.75 : 0.4)) {
@@ -479,7 +477,11 @@ function makeParticipant(r: R, seg: Segment, now: number) {
     let cpMs = 0;
     for (const [name, ids] of Object.entries(pauses)) {
       const before = t;
+      // Turning renting on is the only optional pause: owners who leave it off never reach it,
+      // and the checkpoint it carries is asked at the booking instead.
+      if (screen === 'plan-trip' && name === 'rent_on' && !rentOn) continue;
       if (screen === 'membership' && name === 'pay') behavior('owner.membership:pay', { price: STUDY.pricing.membershipFounding }, persona, step.id);
+      if (screen === 'plan-trip' && name === 'rent_on') behavior('owner.trip:rent_on', { price: 45 }, persona, step.id);
       if (screen === 'plan-trip' && name === 'book') behavior('owner.trip:book', { rent: rentOn, price: 45 }, persona, step.id);
       if (screen === 'car-detail' && name === 'request') {
         const car = BROWSE_CARS[r.weighted(BROWSE_CARS.map((_, i) => [i, [26, 22, 24, 12, 6, 10][i]] as const))];

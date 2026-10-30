@@ -285,7 +285,7 @@ main{padding:16px 16px 180px}
 <div class="rb off" id="rOff">Turn this on to see what your car could earn on this trip. We set the daily price. Your parking is booked either way.</div>
 <div class="rb" id="rBlock" hidden><div class="blockm"><span class="li"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 018 0v3"></path></svg></span><div><b id="bWhy"></b><p id="bWhyL"></p><a id="bFix" href="#"></a></div></div></div>
 <div class="rb" id="rOn" hidden>
-<div class="prow"><p class="sugg">We set the price. Similar cars at {{AIRPORT_CODE}}: <b id="sug">$38–$52</b> · your car lists at <b id="ourP">$45/day</b></p></div>
+<p class="sugg">We set the price. Similar cars at {{AIRPORT_CODE}}: <b id="sug">$38–$52</b> · your car lists at <b id="ourP">$45/day</b></p>
 <p class="win"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg><span>Available to renters: <b id="rWin"></b></span></p>
 <div class="est">
 <div class="net"><span id="netL">Your trip after rental</span><b id="netV"></b><small id="netS"></small></div>
@@ -388,7 +388,7 @@ function confirm(){
  $('form').hidden=true;$('foot').hidden=true;$('done').hidden=false;window.scrollTo(0,0);window.__study.signal('confirmed',{rent:rent,price:ourPrice(),days:sp.days,estEarnings:Math.round(net*100)/100});
 }
 $('go').onclick=function(){if(busy)return;if(!validate()){var f=document.querySelector('.f.bad input');if(f)f.focus();return}window.__study.pause('book',{rent:!!(CARS[S.car].ok&&S.rent),price:ourPrice()}).then(function(){lock(true);setTimeout(function(){lock(false);confirm()},1400)})};
-$('rentSw').onchange=function(){S.rent=this.checked;calc()};
+$('rentSw').onchange=function(){if(!this.checked){S.rent=false;calc();return}window.__study.pause('rent_on').then(function(){S.rent=true;calc()})};
 ['dd','dt','rd','rt'].forEach(function(k){$(k).oninput=function(){if(k==='dd'||k==='rd')mark(k,null);calc()}});
 $('copy').onclick=function(){try{navigator.clipboard.writeText('PK-48217')}catch(e){}this.textContent='Copied'};
 function reset(){busy=false;S={car:'mine',rent:false,err:{}};$('dd').value=window.__study.date(14);$('dt').value='08:30';$('rd').value=window.__study.date(21);$('rt').value='18:40';['dd','rd'].forEach(function(k){mark(k,null)});$('sum').hidden=true;$('form').hidden=false;$('foot').hidden=false;$('done').hidden=true;document.querySelectorAll('#form input').forEach(function(i){i.disabled=false});$('go').disabled=false}

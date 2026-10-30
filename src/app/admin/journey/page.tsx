@@ -33,7 +33,6 @@ export default async function Journey({ searchParams }: { searchParams: Promise<
           value={behavior.ownersBooked ? `${Math.round((behavior.ownersRentOn / behavior.ownersBooked) * 100)}%` : '—'}
           sub={`${behavior.ownersRentOn} of ${behavior.ownersBooked} at booking`}
         />
-        <Stat label="Median daily price set" value={behavior.medianPrice != null ? `$${behavior.medianPrice}` : '—'} sub="Owners who turned on renting" />
         <Stat label="Renter requests sent" value={behavior.renterCars.reduce((a, [, n]) => a + n, 0)} />
       </div>
 

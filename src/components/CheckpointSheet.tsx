@@ -32,6 +32,9 @@ export function CheckpointSheet({
   const shownAt = useRef(Date.now());
   const changes = useRef(0);
   const headRef = useRef<HTMLHeadingElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const dismissRef = useRef(onDismiss);
+  dismissRef.current = onDismiss;
 
   useEffect(() => {
     shownAt.current = Date.now();
@@ -41,6 +44,37 @@ export function CheckpointSheet({
     headRef.current?.focus();
   }, [cp.id]);
 
+  // Escape closes (same as the X), and Tab stays inside the dialog: the prototype behind it is
+  // frozen and aria-hidden, so letting focus reach it would strand keyboard users.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        dismissRef.current?.();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const panel = panelRef.current;
+      if (!panel) return;
+      const focusable = panel.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first) return;
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || active === headRef.current)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   const ready = isAnswered(cp.main, main);
   const submit = () => {
     if (!ready) return;
@@ -48,10 +82,19 @@ export function CheckpointSheet({
   };
 
   return (
-    <div className="absolute inset-0 z-30 flex flex-col justify-end" role="dialog" aria-modal="true" aria-labelledby={`cp-${cp.id}`}>
+    <div
+      className="absolute inset-0 z-30 flex flex-col justify-end md:items-center md:justify-center md:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={`cp-${cp.id}`}
+    >
       <div className="fade-in absolute inset-0 bg-[rgba(10,26,54,.38)]" aria-hidden="true" />
-      <div className="sheet-in relative max-h-[88%] overflow-y-auto rounded-t-[22px] bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_rgba(10,26,54,.25)]">
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line" aria-hidden="true" />
+      {/* Bottom sheet on phones, centred card once there is room for one. */}
+      <div
+        ref={panelRef}
+        className="sheet-in relative max-h-[88%] w-full overflow-y-auto rounded-t-[22px] bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_rgba(10,26,54,.25)] md:max-h-[80%] md:max-w-[480px] md:rounded-[22px] md:px-6 md:pb-6 md:pt-4 md:shadow-[0_24px_60px_rgba(10,26,54,.3)]"
+      >
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line md:hidden" aria-hidden="true" />
         <div className="mb-1 flex items-center justify-between">
           <span className="text-[12px] font-bold uppercase tracking-[1.2px] text-accent">Quick question</span>
           <span className="flex items-center gap-2">

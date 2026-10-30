@@ -7,7 +7,10 @@ const cache = new Map<string, Promise<string>>();
 export function loadScreen(id: string): Promise<string> {
   let p = cache.get(id);
   if (!p) {
-    p = fetch(`/screens/${encodeURIComponent(id)}.html`, { cache: 'force-cache' }).then((r) => {
+    // 'no-cache' revalidates instead of trusting a stale copy: 'force-cache' would serve a
+    // screen cached before a deploy forever, silently showing different people different
+    // stimuli. The ETag makes this a 304, and the Map above means one request per session.
+    p = fetch(`/screens/${encodeURIComponent(id)}.html`, { cache: 'no-cache' }).then((r) => {
       if (!r.ok) throw new Error(`Screen ${id} not found`);
       return r.text();
     });
@@ -21,11 +24,30 @@ export function preloadScreens(ids: string[]) {
   for (const id of ids) void loadScreen(id).catch(() => undefined);
 }
 
-/** CSS that strips prototype-only chrome (state panels, role switcher, tab bars). */
+/**
+ * CSS that strips prototype-only chrome (state panels, role switcher, tab bars).
+ *
+ * The screens lay themselves out as a 248px sidebar plus content above 1023px. We hide the
+ * sidebar, so the grid collapses to one column at every width rather than leaving a dead
+ * gutter, and the compact logo header (which the screens drop in the sidebar's favour) stays
+ * on so the app name is visible however wide the window is. That header's own styling lives
+ * inside the screens' max-width:1023px media query, so it has to be restated here or it
+ * renders unstyled and flush to the edge on wide windows.
+ */
 const STUDY_CSS = `
 .rail,.tabs,nav.nav,details.review,.review,.vsw,.top .av,.top .close,#rStates{display:none!important}
+.app{grid-template-columns:1fr!important}
+.top{
+  display:flex!important;position:sticky;top:0;z-index:30;height:60px;
+  align-items:center;justify-content:space-between;padding:0 16px;
+  background:rgba(241,244,250,.9);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)
+}
 .stick,.mbar{bottom:0!important}
 .foot{left:0!important}
+/* The rental banner's decorative glow is positioned 70px past its right edge, which makes
+   overflow:hidden a scroll container: focusing the toggle inside it scrolls the heading out
+   of view. overflow:clip still crops the glow but can never scroll. */
+.rh{overflow:clip!important}
 .logo{text-decoration:none;pointer-events:none}
 .wm{font-family:var(--serif);font-size:23px;line-height:1;color:var(--ink);letter-spacing:-.4px;font-weight:400;white-space:nowrap}
 #stepper{display:none!important}

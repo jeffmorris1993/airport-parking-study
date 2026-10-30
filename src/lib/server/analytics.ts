@@ -266,7 +266,6 @@ export async function journeyMetrics(order: 'all' | 'first' | 'second' = 'all') 
   const beh = responses.filter((r) => r.phase === 'behavior');
   const confirmedOwner = beh.filter((r) => r.question_id === 'owner.trip:confirmed').map((r) => r.value as Record<string, unknown>);
   const rentOn = confirmedOwner.filter((v) => v?.rent);
-  const prices = rentOn.map((v) => Number(v.price)).filter(Number.isFinite);
   const renterCars = new Map<string, number>();
   for (const r of beh.filter((x) => x.question_id === 'renter.car:request')) {
     const car = String((r.value as Record<string, unknown>)?.car || 'unknown');
@@ -290,8 +289,6 @@ export async function journeyMetrics(order: 'all' | 'first' | 'second' = 'all') 
       tripAirports: [...tripAirports].sort((a, b) => b[1] - a[1]).slice(0, 15),
       ownersBooked: confirmedOwner.length,
       ownersRentOn: rentOn.length,
-      medianPrice: median(prices),
-      prices,
       renterCars: [...renterCars].sort((a, b) => b[1] - a[1]),
       ownerCars: [...ownerCars].sort((a, b) => b[1] - a[1]).slice(0, 10),
     },
@@ -372,22 +369,35 @@ export async function participantDetail(id: string) {
 
 /* ---------------- heatmaps ---------------- */
 
-export async function heatmapData(screenId: string, device: 'mobile' | 'desktop' | 'all') {
+export const HEATMAP_WIDTH = { phone: 390, desktop: 1280 } as const;
+/** The screens switch to their wide layout above this; see the media queries in public/screens. */
+const WIDE_FROM = 1024;
+
+export async function heatmapData(screenId: string, layout: 'phone' | 'desktop') {
   const store = getStore();
-  const [events, participants] = await Promise.all([
-    store.listEvents({ screenId, types: ['click', 'dead_click', 'rage_click', 'step_exit', 'blocked_nav'] }),
-    store.listParticipants(),
-  ]);
-  // Device comes from the participant's browser window at consent, not the
-  // prototype frame (which is phone-width on every device).
-  const deviceOf = new Map(participants.map((p) => [p.id, p.device === 'mobile' ? 'mobile' : 'desktop']));
-  const fits = (e: EventRow) => device === 'all' || deviceOf.get(e.participant_id) === device;
+  const events = await store.listEvents({
+    screenId,
+    types: ['click', 'dead_click', 'rage_click', 'step_exit', 'blocked_nav', 'screen_loaded'],
+  });
+  // Bucket on the width the prototype actually rendered at, not the participant's device: the
+  // screens pick their layout from the iframe's width, and a tablet sees the phone layout.
+  const layoutOfWidth = (w: number) => (w < WIDE_FROM ? 'phone' : 'desktop');
+  // step_exit carries no width of its own, so fall back to this participant's screen_loaded —
+  // the one event emitted per visit with the iframe's real dimensions. A participant who
+  // resized between two visits to the same screen is bucketed by their latest.
+  const widthOf = new Map<string, number>();
+  for (const e of events) {
+    if (e.type !== 'screen_loaded') continue;
+    const w = e.doc_w || e.vw;
+    if (w) widthOf.set(e.participant_id, w);
+  }
+  const fits = (e: EventRow) => layoutOfWidth(e.doc_w || e.vw || widthOf.get(e.participant_id) || HEATMAP_WIDTH.phone) === layout;
   const clicks = events
     .filter((e) => (e.type === 'click' || e.type === 'dead_click' || e.type === 'rage_click') && meta(e, 'surface') === 'screen' && e.x != null && e.y != null && fits(e))
     .map((e) => ({
       x: e.x!,
       y: e.y!,
-      w: e.doc_w || e.vw || 390,
+      w: e.doc_w || e.vw || HEATMAP_WIDTH.phone,
       t: e.type,
       label: e.label,
       pin: (meta(e, 'pin') as 'top' | 'bottom' | undefined) ?? null,

@@ -27,7 +27,7 @@ test('owner-only participant: survey, owner walkthrough, full tracking', async (
 
   const rs = stored.responses().filter((r) => r.participant_id === p.id);
   const ids = new Set(rs.map((r) => `${r.question_id}${r.journey ? '@' + r.journey : ''}`));
-  for (const q of ['s_age', 's_parking_onsite', 's_parking_offsite', 'q8_wtp', 'q9_concern', 'q_trip_length', 'cp1', 'cp2', 'cp3', 'cp4', 'cp5@owner', 'h2_pct@owner', 'cp8@owner', 'cp9@owner', 'cp10@owner']) {
+  for (const q of ['s_age', 's_parking_onsite', 's_parking_offsite', 'q8_wtp', 'q9_concern', 'q_trip_length', 'cp1', 'cp2', 'cp3', 'cp4', 'cp5@owner', 'h2_pct@owner', 'cp8@owner', 'cp9@owner']) {
     expect(ids, q).toContain(q);
   }
   expect(rs.find((r) => r.question_id === 'owner.trip_airports')!.value).toEqual({ from: 'DEN', to: 'MDW' });

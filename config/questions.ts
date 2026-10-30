@@ -344,16 +344,6 @@ export const CHECKPOINTS: Record<string, Checkpoint> = {
     },
     followup: why('cp9_why'),
   },
-  cp10: {
-    id: 'cp10',
-    label: 'Biggest hesitation',
-    main: {
-      id: 'cp10',
-      type: 'text',
-      prompt: 'Looking back at the whole walkthrough, what was your biggest moment of hesitation?',
-      placeholder: 'Type your answer',
-    },
-  },
 };
 
 /* ------------------------------------------------------------------ */

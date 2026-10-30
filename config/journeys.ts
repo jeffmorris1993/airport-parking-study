@@ -123,8 +123,12 @@ export const JOURNEYS: Record<Persona, Journey> = {
         task: 'Book parking for your trip. Decide whether to rent your car while you’re away — we set the price — then book.',
         advanceOn: ['confirmed'],
         advanceDelayMs: 2200,
-        pauses: { book: ['h2'] },
-        after: ['cp9', 'cp10'],
+        // h2 is listed twice on purpose. Switching renting on asks it before the earnings
+        // split is revealed, so the 25% service fee can't anchor the answer; checkpoints are
+        // de-duplicated, so owners who never turn renting on are asked at the booking instead
+        // (they have not seen a percentage there either).
+        pauses: { rent_on: ['h2'], book: ['h2'] },
+        after: ['cp9'],
       },
     ],
   },
@@ -174,7 +178,7 @@ export const JOURNEYS: Record<Persona, Journey> = {
         advanceOn: ['confirmed'],
         advanceDelayMs: 2200,
         pauses: { send: ['cp8'] },
-        after: ['cp9', 'cp10'],
+        after: ['cp9'],
       },
     ],
   },
