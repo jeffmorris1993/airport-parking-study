@@ -264,7 +264,7 @@ export const CHECKPOINTS: Record<string, Checkpoint> = {
   cp1: {
     id: 'cp1',
     label: 'Concept clarity',
-    main: scale5('cp1', 'How clear is what this app does?', 'Not clear', 'Very clear'),
+    main: scale5('cp1', 'How clear is this app’s purpose?', 'Not clear', 'Very clear'),
     followup: why('cp1_why'),
   },
   cp2: {
